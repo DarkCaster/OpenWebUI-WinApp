@@ -42,6 +42,7 @@ class AppController:
             console_height=config.CONSOLE_HEIGHT,
             runner=self.runner,
             initial_html=StatusPage.stopped_page(),
+            on_ready_callback=self._on_window_ready,
         )
 
         # Initialize window
@@ -57,20 +58,26 @@ class AppController:
         """
         Begin application lifecycle.
 
-        Auto-starts the runner and shows the main window (blocking call).
+        Shows the main window (blocking call). Auto-start happens after window is ready.
         """
         self.logger.info("Starting application")
 
-        # Auto-start open-webui on launch
-        self.logger.info("Auto-starting Open WebUI")
+        # Show window (blocking call)
+        # Auto-start will be triggered by _on_window_ready callback
+        self.window.show()
+
+    def _on_window_ready(self) -> None:
+        """
+        Callback executed after the window is ready.
+
+        Auto-starts the Open WebUI runner.
+        """
+        self.logger.info("Window is ready, auto-starting Open WebUI")
         try:
             self.runner.start()
         except Exception as e:
             self.logger.error(f"Failed to auto-start Open WebUI: {e}")
             self.window.load_html(StatusPage.error_page(f"Failed to start: {str(e)}"))
-
-        # Show window (blocking call)
-        self.window.show()
 
     def shutdown(self) -> None:
         """

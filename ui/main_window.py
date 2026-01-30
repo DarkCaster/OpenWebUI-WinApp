@@ -1,5 +1,5 @@
 import webview
-from typing import Optional
+from typing import Optional, Callable
 from logger import get_logger
 from .menu_builder import MenuBuilder
 from .console_view import ConsoleView
@@ -22,6 +22,7 @@ class MainWindow:
         console_height: int = 200,
         runner: Optional[OpenWebUIRunner] = None,
         initial_html: Optional[str] = None,
+        on_ready_callback: Optional[Callable[[], None]] = None,
     ):
         """
         Initialize the main window.
@@ -32,12 +33,14 @@ class MainWindow:
             console_height: Console panel height when visible
             runner: Reference to OpenWebUIRunner instance
             initial_html: Initial HTML content to display when window is created
+            on_ready_callback: Callback function to execute after window is ready
         """
         self.width = width
         self.height = height
         self.console_height = console_height
         self.runner = runner
         self.initial_html = initial_html
+        self.on_ready_callback = on_ready_callback
 
         self.window: Optional[webview.Window] = None
         self.console_view = ConsoleView(max_lines=1000)
@@ -97,7 +100,12 @@ class MainWindow:
             return
 
         self.logger.info("Starting pywebview")
-        webview.start()
+        
+        # If there's a ready callback, pass it to webview.start()
+        if self.on_ready_callback:
+            webview.start(self.on_ready_callback)
+        else:
+            webview.start()
 
     def load_url(self, url: str) -> None:
         """
