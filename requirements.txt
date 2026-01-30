@@ -1,3 +1,4 @@
 open-webui
 hf_xet
 pywebview
+requests
