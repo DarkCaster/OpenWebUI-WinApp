@@ -1,3 +1,4 @@
+import webview
 from typing import Dict, Callable
 from runner import ProcessState
 
@@ -20,39 +21,51 @@ class MenuBuilder:
                       Expected keys: 'start', 'stop', 'restart', 'toggle_console', 'about', 'exit'
 
         Returns:
-            List of menu item dictionaries compatible with pywebview
+            List of menu items compatible with pywebview (nested dictionary structure)
         """
         menu = [
             {
-                "label": "File",
-                "items": [
-                    {"label": "Exit", "action": callbacks.get("exit", lambda: None)}
-                ],
+                'title': 'File',
+                'items': [
+                    {
+                        'title': 'Exit',
+                        'action': callbacks.get("exit", lambda: None)
+                    }
+                ]
             },
             {
-                "label": "Control",
-                "items": [
-                    {"label": "Start", "action": callbacks.get("start", lambda: None)},
-                    {"label": "Stop", "action": callbacks.get("stop", lambda: None)},
+                'title': 'Control',
+                'items': [
                     {
-                        "label": "Restart",
-                        "action": callbacks.get("restart", lambda: None),
+                        'title': 'Start',
+                        'action': callbacks.get("start", lambda: None)
                     },
                     {
-                        "label": "-"  # Separator
+                        'title': 'Stop',
+                        'action': callbacks.get("stop", lambda: None)
                     },
                     {
-                        "label": "Toggle Console",
-                        "action": callbacks.get("toggle_console", lambda: None),
+                        'title': 'Restart',
+                        'action': callbacks.get("restart", lambda: None)
                     },
-                ],
+                    {
+                        'type': 'separator'
+                    },
+                    {
+                        'title': 'Toggle Console',
+                        'action': callbacks.get("toggle_console", lambda: None)
+                    }
+                ]
             },
             {
-                "label": "Help",
-                "items": [
-                    {"label": "About", "action": callbacks.get("about", lambda: None)}
-                ],
-            },
+                'title': 'Help',
+                'items': [
+                    {
+                        'title': 'About',
+                        'action': callbacks.get("about", lambda: None)
+                    }
+                ]
+            }
         ]
 
         return menu
