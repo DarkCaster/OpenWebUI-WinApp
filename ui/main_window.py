@@ -78,6 +78,7 @@ class MainWindow:
                 resizable=True,
                 fullscreen=False,
                 min_size=(800, 600),
+                menu=menu,
             )
         else:
             self.window = webview.create_window(
@@ -88,6 +89,7 @@ class MainWindow:
                 resizable=True,
                 fullscreen=False,
                 min_size=(800, 600),
+                menu=menu,
             )
 
         self.logger.info("Main window created")
