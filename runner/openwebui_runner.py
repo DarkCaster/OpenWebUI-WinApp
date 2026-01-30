@@ -62,13 +62,20 @@ class OpenWebUIRunner:
         try:
             self.logger.info(f"Starting open-webui serve on port {self.port}")
 
+            # Prepare environment with UTF-8 encoding
+            env = os.environ.copy()
+            env['PYTHONIOENCODING'] = 'utf-8'
+
             # Launch subprocess
             self._process = subprocess.Popen(
                 ["open-webui", "serve", "--port", str(self.port)],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
+                encoding='utf-8',
+                errors='replace',
                 bufsize=1,
+                env=env,
             )
 
             self.logger.debug(f"Process started with PID: {self._process.pid}")
