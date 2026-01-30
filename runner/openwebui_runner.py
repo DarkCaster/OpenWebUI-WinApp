@@ -71,6 +71,8 @@ class OpenWebUIRunner:
                 bufsize=1,
             )
 
+            self.logger.debug(f"Process started with PID: {self._process.pid}")
+
             # Start output reader thread
             self._output_thread = threading.Thread(
                 target=self._output_reader_thread, daemon=True, name="OutputReader"
@@ -85,8 +87,20 @@ class OpenWebUIRunner:
 
             return True
 
+        except FileNotFoundError as e:
+            self.logger.error(f"Failed to start open-webui: Command not found. Is 'open-webui' installed? Error: {e}")
+            self._set_state(ProcessState.ERROR)
+            return False
+        except PermissionError as e:
+            self.logger.error(f"Failed to start open-webui: Permission denied. Error: {e}")
+            self._set_state(ProcessState.ERROR)
+            return False
+        except OSError as e:
+            self.logger.error(f"Failed to start open-webui: OS error occurred. Error: {e}")
+            self._set_state(ProcessState.ERROR)
+            return False
         except Exception as e:
-            self.logger.error(f"Failed to start open-webui: {e}")
+            self.logger.error(f"Failed to start open-webui: Unexpected error: {e}")
             self._set_state(ProcessState.ERROR)
             return False
 
@@ -175,15 +189,21 @@ class OpenWebUIRunner:
         with self._state_lock:
             return self._state
 
-    def get_output_lines(self) -> List[str]:
+    def get_output_lines(self, max_lines: Optional[int] = None) -> List[str]:
         """
         Get captured console output lines.
+
+        Args:
+            max_lines: Maximum number of lines to return (most recent), None for all
 
         Returns:
             List of output lines
         """
         with self._output_lock:
-            return self._output_lines.copy()
+            if max_lines is None:
+                return self._output_lines.copy()
+            else:
+                return self._output_lines[-max_lines:]
 
     def subscribe_to_output(self, callback: Callable[[str], None]) -> None:
         """
@@ -252,6 +272,20 @@ class OpenWebUIRunner:
         except Exception as e:
             self.logger.error(f"Error reading process output: {e}")
         finally:
+            # Check if process terminated abnormally
+            if self._process:
+                exit_code = self._process.poll()
+                if exit_code is not None and exit_code != 0:
+                    self.logger.error(f"Process terminated with exit code: {exit_code}")
+                    # Log last few lines of output
+                    last_lines = self.get_output_lines(max_lines=20)
+                    if last_lines:
+                        self.logger.error("Last output lines from process:")
+                        for line in last_lines:
+                            self.logger.error(f"  {line}")
+                elif exit_code == 0:
+                    self.logger.info("Process terminated normally with exit code: 0")
+
             self.logger.debug("Output reader thread ended")
 
     def _notify_output_subscribers(self, line: str) -> None:
@@ -274,19 +308,81 @@ class OpenWebUIRunner:
         """
         self.logger.debug("Waiting for health check")
 
-        # Check if process is still alive
-        if self._process and self._process.poll() is not None:
-            self.logger.error("Process terminated before health check completed")
-            self._set_state(ProcessState.ERROR)
-            return
+        # Give process a moment to start
+        time.sleep(0.5)
 
-        # Wait for service to become available
-        if self._health_checker.wait_until_ready():
-            with self._state_lock:
-                if self._state == ProcessState.STARTING:
-                    self._set_state(ProcessState.RUNNING)
-        else:
-            self.logger.error("Health check timeout")
+        # Check if process is still alive before starting health check
+        if self._process and self._process.poll() is not None:
+            exit_code = self._process.returncode
+            self.logger.error(f"Process terminated before health check could complete. Exit code: {exit_code}")
+            
+            # Log recent output
+            last_lines = self.get_output_lines(max_lines=20)
+            if last_lines:
+                self.logger.error("Recent output from process:")
+                for line in last_lines:
+                    self.logger.error(f"  {line}")
+            else:
+                self.logger.error("No output was captured from the process")
+            
             with self._state_lock:
                 if self._state == ProcessState.STARTING:
                     self._set_state(ProcessState.ERROR)
+            return
+
+        # Perform health check with periodic process monitoring
+        start_time = time.time()
+        while time.time() - start_time < self.health_check_timeout:
+            # Check if process is still running
+            if self._process and self._process.poll() is not None:
+                exit_code = self._process.returncode
+                self.logger.error(f"Process terminated during health check. Exit code: {exit_code}")
+                
+                # Log recent output
+                last_lines = self.get_output_lines(max_lines=20)
+                if last_lines:
+                    self.logger.error("Recent output from process:")
+                    for line in last_lines:
+                        self.logger.error(f"  {line}")
+                else:
+                    self.logger.error("No output was captured from the process")
+                
+                with self._state_lock:
+                    if self._state == ProcessState.STARTING:
+                        self._set_state(ProcessState.ERROR)
+                return
+
+            # Try health check
+            if self._health_checker.check_availability():
+                elapsed = time.time() - start_time
+                self.logger.info(f"Service became available after {elapsed:.1f}s")
+                with self._state_lock:
+                    if self._state == ProcessState.STARTING:
+                        self._set_state(ProcessState.RUNNING)
+                return
+
+            time.sleep(self._health_checker.interval)
+
+        # Timeout reached
+        self.logger.error("Health check timeout")
+        
+        # Check if process is still running
+        if self._process:
+            exit_code = self._process.poll()
+            if exit_code is not None:
+                self.logger.error(f"Process has exited with code: {exit_code}")
+            else:
+                self.logger.error("Process is still running but not responding to health checks")
+        
+        # Log recent output
+        last_lines = self.get_output_lines(max_lines=20)
+        if last_lines:
+            self.logger.error("Recent output from process:")
+            for line in last_lines:
+                self.logger.error(f"  {line}")
+        else:
+            self.logger.error("No output was captured from the process")
+        
+        with self._state_lock:
+            if self._state == ProcessState.STARTING:
+                self._set_state(ProcessState.ERROR)

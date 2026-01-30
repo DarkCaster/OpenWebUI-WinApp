@@ -35,13 +35,14 @@ class AppController:
             port=config.PORT, health_check_timeout=config.HEALTH_CHECK_TIMEOUT
         )
 
-        # Create main window instance with initial stopped page
+        # Create main window instance with initial starting page
+        # (since auto-start happens immediately after window is ready)
         self.window = MainWindow(
             width=config.WINDOW_WIDTH,
             height=config.WINDOW_HEIGHT,
             console_height=config.CONSOLE_HEIGHT,
             runner=self.runner,
-            initial_html=StatusPage.stopped_page(),
+            initial_html=StatusPage.starting_page(),
             on_ready_callback=self._on_window_ready,
         )
 
@@ -144,7 +145,15 @@ class AppController:
         elif new_state == ProcessState.ERROR:
             self.logger.debug("Loading error page")
             if self.window:
-                error_message = "An error occurred while running Open WebUI. Check the console for details."
+                # Get recent output lines to include in error message
+                error_message = "An error occurred while running Open WebUI."
+                if self.runner:
+                    last_lines = self.runner.get_output_lines(max_lines=10)
+                    if last_lines:
+                        error_message += "\n\nRecent output:\n" + "\n".join(last_lines)
+                    else:
+                        error_message += "\n\nNo output was captured from the process."
+                error_message += "\n\nCheck the console for more details."
                 self.window.load_html(StatusPage.error_page(error_message))
 
     def on_runner_output(self, line: str) -> None:

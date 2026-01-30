@@ -45,6 +45,7 @@ class MainWindow:
         self.window: Optional[webview.Window] = None
         self.console_view = ConsoleView(max_lines=1000)
         self.console_visible = False
+        self.window_ready = False
 
         self.logger = get_logger(__name__)
         self.logger.info(f"MainWindow initialized ({width}x{height})")
@@ -101,11 +102,18 @@ class MainWindow:
 
         self.logger.info("Starting pywebview")
         
-        # If there's a ready callback, pass it to webview.start()
+        # If there's a ready callback, wrap it to set window_ready flag
         if self.on_ready_callback:
-            webview.start(self.on_ready_callback)
+            def wrapped_callback():
+                self.window_ready = True
+                self.logger.debug("Window ready flag set")
+                self.on_ready_callback()
+            webview.start(wrapped_callback)
         else:
-            webview.start()
+            def ready_callback():
+                self.window_ready = True
+                self.logger.debug("Window ready flag set")
+            webview.start(ready_callback)
 
     def load_url(self, url: str) -> None:
         """
@@ -117,6 +125,9 @@ class MainWindow:
         if not self.window:
             self.logger.error("Cannot load URL: window not initialized")
             return
+
+        if not self.window_ready:
+            self.logger.warning("Attempting to load URL before window is ready")
 
         self.logger.info(f"Loading URL: {url}")
         self.window.load_url(url)
@@ -131,6 +142,9 @@ class MainWindow:
         if not self.window:
             self.logger.error("Cannot load HTML: window not initialized")
             return
+
+        if not self.window_ready:
+            self.logger.warning("Attempting to load HTML before window is ready")
 
         self.logger.debug("Loading HTML content")
         self.window.load_html(html)

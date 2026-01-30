@@ -63,12 +63,17 @@ class HealthChecker:
             self.logger.debug(f"Health check failed: {e}")
             return False
 
-    def wait_until_ready(self) -> bool:
+    def wait_until_ready(
+        self, should_continue_callback: Optional[Callable[[], bool]] = None
+    ) -> bool:
         """
         Block until service is available or timeout is reached.
 
+        Args:
+            should_continue_callback: Optional callback that returns False to stop waiting early
+
         Returns:
-            True if service became available, False if timeout reached
+            True if service became available, False if timeout reached or callback stopped wait
         """
         self.logger.info(
             f"Waiting for service at {self.url} (timeout: {self.timeout}s)"
@@ -76,6 +81,11 @@ class HealthChecker:
         start_time = time.time()
 
         while time.time() - start_time < self.timeout:
+            # Check if we should continue waiting
+            if should_continue_callback and not should_continue_callback():
+                self.logger.info("Health check stopped by callback")
+                return False
+
             if self.check_availability():
                 elapsed = time.time() - start_time
                 self.logger.info(f"Service became available after {elapsed:.1f}s")
