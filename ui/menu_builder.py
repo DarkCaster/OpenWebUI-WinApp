@@ -18,7 +18,7 @@ class MenuBuilder:
 
         Args:
             callbacks: Dictionary mapping action names to callback functions.
-                      Expected keys: 'start', 'stop', 'restart', 'toggle_console', 'about', 'exit'
+                      Expected keys: 'start', 'stop', 'restart', 'toggle_console', 'exit'
 
         Returns:
             List of menu items compatible with pywebview (list of webview.Menu objects)
@@ -39,13 +39,7 @@ class MenuBuilder:
         ]
         control_menu = Menu('Control', control_menu_items)
 
-        # Help menu
-        help_menu_items = [
-            MenuAction('About', callbacks.get("about", lambda: None))
-        ]
-        help_menu = Menu('Help', help_menu_items)
-
-        return [file_menu, control_menu, help_menu]
+        return [file_menu, control_menu]
 
     @staticmethod
     def get_menu_state(process_state: ProcessState) -> Dict[str, bool]:
@@ -64,7 +58,6 @@ class MenuBuilder:
             "stop": False,
             "restart": False,
             "toggle_console": True,  # Always enabled
-            "about": True,  # Always enabled
             "exit": True,  # Always enabled
         }
 

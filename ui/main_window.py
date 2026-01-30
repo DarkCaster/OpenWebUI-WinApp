@@ -63,7 +63,6 @@ class MainWindow:
                 "stop": self.handle_stop,
                 "restart": self.handle_restart,
                 "toggle_console": self.handle_toggle_console,
-                "about": self.handle_about,
                 "exit": self.handle_exit,
             }
         )
@@ -256,70 +255,6 @@ class MainWindow:
         """
         self.logger.info("Toggle console action triggered from menu")
         self.toggle_console()
-
-    def handle_about(self) -> None:
-        """
-        Menu callback for about action.
-        """
-        self.logger.info("About dialog requested")
-
-        about_html = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>About</title>
-            <style>
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    height: 100vh;
-                    margin: 0;
-                    color: #fff;
-                }
-                .about-box {
-                    background: rgba(255, 255, 255, 0.95);
-                    padding: 40px;
-                    border-radius: 12px;
-                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-                    text-align: center;
-                    color: #333;
-                }
-                h1 {
-                    margin: 0 0 20px 0;
-                    color: #667eea;
-                }
-                p {
-                    margin: 10px 0;
-                    line-height: 1.6;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="about-box">
-                <h1>Open WebUI Launcher</h1>
-                <p><strong>Version:</strong> 1.0.0</p>
-                <p>A graphical launcher for Open WebUI</p>
-                <p>Wraps the web interface in a single-window container</p>
-                <p style="margin-top: 20px; font-size: 0.9em; color: #666;">
-                    Use Control menu to start, stop, or restart the service
-                </p>
-            </div>
-        </body>
-        </html>
-        """
-
-        # Create a temporary window for about dialog
-        webview.create_window(
-            title="About Open WebUI Launcher",
-            html=about_html,
-            width=400,
-            height=300,
-            resizable=False,
-        )
 
     def handle_exit(self) -> None:
         """
