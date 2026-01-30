@@ -2,7 +2,8 @@ import subprocess
 import threading
 import os
 import time
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, TextIO
+from datetime import datetime
 from logger import get_logger
 from .process_state import ProcessState
 from .health_checker import HealthChecker
@@ -35,6 +36,9 @@ class OpenWebUIRunner:
         self._output_lock = threading.Lock()
         self._output_thread: Optional[threading.Thread] = None
 
+        self._log_file: Optional[TextIO] = None
+        self._log_file_lock = threading.Lock()
+
         self._output_subscribers: List[Callable[[str], None]] = []
         self._state_subscribers: List[Callable[[ProcessState, ProcessState], None]] = []
 
@@ -60,6 +64,18 @@ class OpenWebUIRunner:
             self._set_state(ProcessState.STARTING)
 
         try:
+            # Open log file
+            try:
+                self._log_file = open("open-webui.log", "a", encoding="utf-8")
+                self.logger.debug("Opened log file: open-webui.log")
+            except Exception as e:
+                self.logger.error(f"Failed to open log file: {e}")
+                self._set_state(ProcessState.ERROR)
+                return False
+
+            # Write separator
+            self._write_separator("STARTING")
+
             self.logger.info(f"Starting open-webui serve on port {self.port}")
 
             # Prepare environment with UTF-8 encoding
@@ -96,18 +112,22 @@ class OpenWebUIRunner:
 
         except FileNotFoundError as e:
             self.logger.error(f"Failed to start open-webui: Command not found. Is 'open-webui' installed? Error: {e}")
+            self._close_log_file()
             self._set_state(ProcessState.ERROR)
             return False
         except PermissionError as e:
             self.logger.error(f"Failed to start open-webui: Permission denied. Error: {e}")
+            self._close_log_file()
             self._set_state(ProcessState.ERROR)
             return False
         except OSError as e:
             self.logger.error(f"Failed to start open-webui: OS error occurred. Error: {e}")
+            self._close_log_file()
             self._set_state(ProcessState.ERROR)
             return False
         except Exception as e:
             self.logger.error(f"Failed to start open-webui: Unexpected error: {e}")
+            self._close_log_file()
             self._set_state(ProcessState.ERROR)
             return False
 
@@ -128,7 +148,12 @@ class OpenWebUIRunner:
 
             self._set_state(ProcessState.STOPPING)
 
+        # Write separator
+        self._write_separator("STOPPING")
+
         if not self._process:
+            self._write_separator("STOPPED")
+            self._close_log_file()
             self._set_state(ProcessState.STOPPED)
             return True
 
@@ -156,11 +181,14 @@ class OpenWebUIRunner:
                 self._output_thread.join(timeout=2)
 
             self._process = None
+            self._write_separator("STOPPED")
+            self._close_log_file()
             self._set_state(ProcessState.STOPPED)
             return True
 
         except Exception as e:
             self.logger.error(f"Error stopping process: {e}")
+            self._close_log_file()
             self._set_state(ProcessState.ERROR)
             return False
 
@@ -172,6 +200,7 @@ class OpenWebUIRunner:
             True if restart successful, False otherwise
         """
         self.logger.info("Restarting open-webui")
+        self._write_separator("RESTARTING")
 
         if not self.stop():
             self.logger.error("Failed to stop process during restart")
@@ -274,22 +303,25 @@ class OpenWebUIRunner:
                 with self._output_lock:
                     self._output_lines.append(line)
 
+                # Write to log file
+                with self._log_file_lock:
+                    if self._log_file:
+                        try:
+                            self._log_file.write(line + "\n")
+                            self._log_file.flush()
+                        except Exception as e:
+                            self.logger.error(f"Error writing to log file: {e}")
+
                 self._notify_output_subscribers(line)
 
         except Exception as e:
             self.logger.error(f"Error reading process output: {e}")
         finally:
-            # Check if process terminated abnormally
+            # Check if process terminated
             if self._process:
                 exit_code = self._process.poll()
                 if exit_code is not None and exit_code != 0:
                     self.logger.error(f"Process terminated with exit code: {exit_code}")
-                    # Log last few lines of output
-                    last_lines = self.get_output_lines(max_lines=20)
-                    if last_lines:
-                        self.logger.error("Last output lines from process:")
-                        for line in last_lines:
-                            self.logger.error(f"  {line}")
                 elif exit_code == 0:
                     self.logger.info("Process terminated normally with exit code: 0")
 
@@ -323,15 +355,6 @@ class OpenWebUIRunner:
             exit_code = self._process.returncode
             self.logger.error(f"Process terminated before health check could complete. Exit code: {exit_code}")
             
-            # Log recent output
-            last_lines = self.get_output_lines(max_lines=20)
-            if last_lines:
-                self.logger.error("Recent output from process:")
-                for line in last_lines:
-                    self.logger.error(f"  {line}")
-            else:
-                self.logger.error("No output was captured from the process")
-            
             with self._state_lock:
                 if self._state == ProcessState.STARTING:
                     self._set_state(ProcessState.ERROR)
@@ -344,15 +367,6 @@ class OpenWebUIRunner:
             if self._process and self._process.poll() is not None:
                 exit_code = self._process.returncode
                 self.logger.error(f"Process terminated during health check. Exit code: {exit_code}")
-                
-                # Log recent output
-                last_lines = self.get_output_lines(max_lines=20)
-                if last_lines:
-                    self.logger.error("Recent output from process:")
-                    for line in last_lines:
-                        self.logger.error(f"  {line}")
-                else:
-                    self.logger.error("No output was captured from the process")
                 
                 with self._state_lock:
                     if self._state == ProcessState.STARTING:
@@ -381,15 +395,45 @@ class OpenWebUIRunner:
             else:
                 self.logger.error("Process is still running but not responding to health checks")
         
-        # Log recent output
-        last_lines = self.get_output_lines(max_lines=20)
-        if last_lines:
-            self.logger.error("Recent output from process:")
-            for line in last_lines:
-                self.logger.error(f"  {line}")
-        else:
-            self.logger.error("No output was captured from the process")
-        
         with self._state_lock:
             if self._state == ProcessState.STARTING:
                 self._set_state(ProcessState.ERROR)
+
+    def _write_separator(self, action: str) -> None:
+        """
+        Write a separator line to both console and log file.
+
+        Args:
+            action: Action description (e.g., "STARTING", "STOPPING", "STOPPED")
+        """
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        separator = f"{'=' * 80}\n{timestamp} - {action}\n{'=' * 80}"
+        
+        # Write to output lines
+        with self._output_lock:
+            for line in separator.split('\n'):
+                self._output_lines.append(line)
+                self._notify_output_subscribers(line)
+        
+        # Write to log file
+        with self._log_file_lock:
+            if self._log_file:
+                try:
+                    self._log_file.write(separator + "\n")
+                    self._log_file.flush()
+                except Exception as e:
+                    self.logger.error(f"Error writing separator to log file: {e}")
+
+    def _close_log_file(self) -> None:
+        """
+        Close the log file if it's open.
+        """
+        with self._log_file_lock:
+            if self._log_file:
+                try:
+                    self._log_file.close()
+                    self.logger.debug("Closed log file")
+                except Exception as e:
+                    self.logger.error(f"Error closing log file: {e}")
+                finally:
+                    self._log_file = None
