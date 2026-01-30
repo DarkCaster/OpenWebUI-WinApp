@@ -1,4 +1,4 @@
-import webview
+from webview.menu import Menu, MenuAction, MenuSeparator
 from typing import Dict, Callable
 from runner import ProcessState
 
@@ -21,54 +21,31 @@ class MenuBuilder:
                       Expected keys: 'start', 'stop', 'restart', 'toggle_console', 'about', 'exit'
 
         Returns:
-            List of menu items compatible with pywebview (nested dictionary structure)
+            List of menu items compatible with pywebview (list of webview.Menu objects)
         """
-        menu = [
-            {
-                'title': 'File',
-                'items': [
-                    {
-                        'title': 'Exit',
-                        'action': callbacks.get("exit", lambda: None)
-                    }
-                ]
-            },
-            {
-                'title': 'Control',
-                'items': [
-                    {
-                        'title': 'Start',
-                        'action': callbacks.get("start", lambda: None)
-                    },
-                    {
-                        'title': 'Stop',
-                        'action': callbacks.get("stop", lambda: None)
-                    },
-                    {
-                        'title': 'Restart',
-                        'action': callbacks.get("restart", lambda: None)
-                    },
-                    {
-                        'type': 'separator'
-                    },
-                    {
-                        'title': 'Toggle Console',
-                        'action': callbacks.get("toggle_console", lambda: None)
-                    }
-                ]
-            },
-            {
-                'title': 'Help',
-                'items': [
-                    {
-                        'title': 'About',
-                        'action': callbacks.get("about", lambda: None)
-                    }
-                ]
-            }
+        # File menu
+        file_menu_items = [
+            MenuAction('Exit', callbacks.get("exit", lambda: None))
         ]
+        file_menu = Menu('File', file_menu_items)
 
-        return menu
+        # Control menu
+        control_menu_items = [
+            MenuAction('Start', callbacks.get("start", lambda: None)),
+            MenuAction('Stop', callbacks.get("stop", lambda: None)),
+            MenuAction('Restart', callbacks.get("restart", lambda: None)),
+            MenuSeparator(),
+            MenuAction('Toggle Console', callbacks.get("toggle_console", lambda: None))
+        ]
+        control_menu = Menu('Control', control_menu_items)
+
+        # Help menu
+        help_menu_items = [
+            MenuAction('About', callbacks.get("about", lambda: None))
+        ]
+        help_menu = Menu('Help', help_menu_items)
+
+        return [file_menu, control_menu, help_menu]
 
     @staticmethod
     def get_menu_state(process_state: ProcessState) -> Dict[str, bool]:
