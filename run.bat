@@ -42,6 +42,7 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 
 echo Starting up
 uv run "%script_dir%main.py" %*
-if %errorlevel% neq 0 exit /b %errorlevel%
+REM if %errorlevel% neq 0 exit /b %errorlevel%
 
+pause
 endlocal
