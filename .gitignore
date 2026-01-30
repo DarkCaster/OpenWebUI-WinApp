@@ -1,0 +1,32 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Local python distribution
+py_dist/
+
+# Subdirs inside tools dir
+/tools/**/
+/tools/*.zip
+
+# Perpetual
+/.perpetual/*
+!/.perpetual/description.md
+/task.md
+/task.*.md
+/question.md
+/answer.md
+/answer.*.md
