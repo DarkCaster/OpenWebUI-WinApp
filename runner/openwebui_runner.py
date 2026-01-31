@@ -1,12 +1,14 @@
 import subprocess
 import threading
 import os
+import sys
 import time
 from typing import Callable, List, Optional, TextIO
 from datetime import datetime
 from logger import get_logger
 from .process_state import ProcessState
 from .health_checker import HealthChecker
+from config import HOST, PORT
 
 
 class OpenWebUIRunner:
@@ -17,14 +19,16 @@ class OpenWebUIRunner:
     and graceful shutdown of the open-webui service.
     """
 
-    def __init__(self, port: Optional[int] = None):
+    def __init__(self, host: Optional[str] = None, port: Optional[int] = None):
         """
         Initialize the Open WebUI runner.
 
         Args:
+            host: Host address for open-webui service (defaults to HOST env var or 127.0.0.1)
             port: Port number for open-webui service (defaults to PORT env var or 8080)
         """
-        self.port = port or int(os.getenv("PORT", "8080"))
+        self.host = host or HOST
+        self.port = port or PORT
 
         self._process: Optional[subprocess.Popen] = None
         self._state = ProcessState.STOPPED
@@ -41,11 +45,11 @@ class OpenWebUIRunner:
         self._state_subscribers: List[Callable[[ProcessState, ProcessState], None]] = []
 
         self._health_checker = HealthChecker(
-            host="127.0.0.1", port=self.port, interval=1.0
+            host=self.host, port=self.port, interval=1.0
         )
 
         self.logger = get_logger(__name__)
-        self.logger.info(f"OpenWebUIRunner initialized with port {self.port}")
+        self.logger.info(f"OpenWebUIRunner initialized with host {self.host} and port {self.port}")
 
     def start(self) -> bool:
         """
@@ -74,15 +78,15 @@ class OpenWebUIRunner:
             # Write separator
             self._write_separator("STARTING")
 
-            self.logger.info(f"Starting open-webui serve on port {self.port}")
+            self.logger.info(f"Starting open-webui serve on host {self.host} and port {self.port}")
 
             # Prepare environment with UTF-8 encoding
             env = os.environ.copy()
             env["PYTHONIOENCODING"] = "utf-8"
 
-            # Launch subprocess
+            # Launch subprocess using Python interpreter to run startup script
             self._process = subprocess.Popen(
-                ["open-webui", "serve", "--port", str(self.port)],
+                [sys.executable, "start_openwebui.py", "--host", self.host, "--port", str(self.port)],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
@@ -110,7 +114,7 @@ class OpenWebUIRunner:
 
         except FileNotFoundError as e:
             self.logger.error(
-                f"Failed to start open-webui: Command not found. Is 'open-webui' installed? Error: {e}"
+                f"Failed to start open-webui: Startup script not found. Error: {e}"
             )
             self._close_log_file()
             self._set_state(ProcessState.ERROR)
