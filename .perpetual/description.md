@@ -16,7 +16,7 @@ The application follows a modular architecture with clear separation of concerns
 - **Separation of Concerns**: Runner, UI, and coordination logic are separated
 - **Observer Pattern**: State changes and output updates use callback subscriptions
 - **Thread Safety**: Runner uses threading for non-blocking operations and state management
-- **Fail-Safe**: Health checker with timeout prevents indefinite hanging
+- **Fail-Safe**: Health checker with timeouts
 - **Graceful Shutdown**: Proper cleanup sequence ensures no orphaned processes
 - **Minimalist UI**: Status pages are simple HTML, no complex UI framework needed
 - **No Persistence**: No application configuration saving/loading

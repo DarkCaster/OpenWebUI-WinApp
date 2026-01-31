@@ -10,14 +10,12 @@ class HealthChecker:
     Monitor open-webui service availability via HTTP requests.
 
     Performs health checks by making HTTP GET requests to the service endpoint.
-    Supports both blocking wait-until-ready and non-blocking periodic monitoring.
     """
 
     def __init__(
         self,
         host: str = "127.0.0.1",
         port: int = 8080,
-        timeout: int = 60,
         interval: float = 1.0,
     ):
         """
@@ -26,12 +24,10 @@ class HealthChecker:
         Args:
             host: Host address to check (default: 127.0.0.1)
             port: Port number to check (default: 8080)
-            timeout: Maximum time to wait for service in seconds (default: 60)
             interval: Time between health checks in seconds (default: 1.0)
         """
         self.host = host
         self.port = port
-        self.timeout = timeout
         self.interval = interval
         self.url = f"http://{host}:{port}"
 
@@ -62,39 +58,6 @@ class HealthChecker:
         except requests.exceptions.RequestException as e:
             self.logger.debug(f"Health check failed: {e}")
             return False
-
-    def wait_until_ready(
-        self, should_continue_callback: Optional[Callable[[], bool]] = None
-    ) -> bool:
-        """
-        Block until service is available or timeout is reached.
-
-        Args:
-            should_continue_callback: Optional callback that returns False to stop waiting early
-
-        Returns:
-            True if service became available, False if timeout reached or callback stopped wait
-        """
-        self.logger.info(
-            f"Waiting for service at {self.url} (timeout: {self.timeout}s)"
-        )
-        start_time = time.time()
-
-        while time.time() - start_time < self.timeout:
-            # Check if we should continue waiting
-            if should_continue_callback and not should_continue_callback():
-                self.logger.info("Health check stopped by callback")
-                return False
-
-            if self.check_availability():
-                elapsed = time.time() - start_time
-                self.logger.info(f"Service became available after {elapsed:.1f}s")
-                return True
-
-            time.sleep(self.interval)
-
-        self.logger.error(f"Service did not become available within {self.timeout}s")
-        return False
 
     def start_monitoring(
         self, callback: Optional[Callable[[bool], None]] = None

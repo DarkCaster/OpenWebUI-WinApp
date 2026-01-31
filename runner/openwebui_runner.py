@@ -41,7 +41,7 @@ class OpenWebUIRunner:
         self._state_subscribers: List[Callable[[ProcessState, ProcessState], None]] = []
 
         self._health_checker = HealthChecker(
-            host="127.0.0.1", port=self.port, timeout=60, interval=1.0
+            host="127.0.0.1", port=self.port, interval=1.0
         )
 
         self.logger = get_logger(__name__)
@@ -78,7 +78,7 @@ class OpenWebUIRunner:
 
             # Prepare environment with UTF-8 encoding
             env = os.environ.copy()
-            env['PYTHONIOENCODING'] = 'utf-8'
+            env["PYTHONIOENCODING"] = "utf-8"
 
             # Launch subprocess
             self._process = subprocess.Popen(
@@ -86,8 +86,8 @@ class OpenWebUIRunner:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                encoding='utf-8',
-                errors='replace',
+                encoding="utf-8",
+                errors="replace",
                 bufsize=1,
                 env=env,
             )
@@ -109,17 +109,23 @@ class OpenWebUIRunner:
             return True
 
         except FileNotFoundError as e:
-            self.logger.error(f"Failed to start open-webui: Command not found. Is 'open-webui' installed? Error: {e}")
+            self.logger.error(
+                f"Failed to start open-webui: Command not found. Is 'open-webui' installed? Error: {e}"
+            )
             self._close_log_file()
             self._set_state(ProcessState.ERROR)
             return False
         except PermissionError as e:
-            self.logger.error(f"Failed to start open-webui: Permission denied. Error: {e}")
+            self.logger.error(
+                f"Failed to start open-webui: Permission denied. Error: {e}"
+            )
             self._close_log_file()
             self._set_state(ProcessState.ERROR)
             return False
         except OSError as e:
-            self.logger.error(f"Failed to start open-webui: OS error occurred. Error: {e}")
+            self.logger.error(
+                f"Failed to start open-webui: OS error occurred. Error: {e}"
+            )
             self._close_log_file()
             self._set_state(ProcessState.ERROR)
             return False
@@ -204,7 +210,11 @@ class OpenWebUIRunner:
         current_state = self.get_state()
 
         # Only stop if process is in a state that requires stopping
-        if current_state in (ProcessState.STARTING, ProcessState.RUNNING, ProcessState.STOPPING):
+        if current_state in (
+            ProcessState.STARTING,
+            ProcessState.RUNNING,
+            ProcessState.STOPPING,
+        ):
             if not self.stop():
                 self.logger.error("Failed to stop process during restart")
                 return False
@@ -212,7 +222,9 @@ class OpenWebUIRunner:
             time.sleep(1)
         elif current_state in (ProcessState.STOPPED, ProcessState.ERROR):
             # Process is already stopped or in error state, skip stop step
-            self.logger.debug(f"Process is in {current_state} state, skipping stop step")
+            self.logger.debug(
+                f"Process is in {current_state} state, skipping stop step"
+            )
         else:
             # Unexpected state
             self.logger.warning(f"Unexpected state during restart: {current_state}")
@@ -362,8 +374,10 @@ class OpenWebUIRunner:
         # Check if process is still alive before starting health check
         if self._process and self._process.poll() is not None:
             exit_code = self._process.returncode
-            self.logger.error(f"Process terminated before health check could complete. Exit code: {exit_code}")
-            
+            self.logger.error(
+                f"Process terminated before health check could complete. Exit code: {exit_code}"
+            )
+
             with self._state_lock:
                 if self._state == ProcessState.STARTING:
                     self._set_state(ProcessState.ERROR)
@@ -375,14 +389,18 @@ class OpenWebUIRunner:
             # Check if state has changed from STARTING (user called stop/restart)
             with self._state_lock:
                 if self._state != ProcessState.STARTING:
-                    self.logger.info(f"Health check stopped due to state change to {self._state}")
+                    self.logger.info(
+                        f"Health check stopped due to state change to {self._state}"
+                    )
                     return
 
             # Check if process is still running
             if self._process and self._process.poll() is not None:
                 exit_code = self._process.returncode
-                self.logger.error(f"Process terminated during health check. Exit code: {exit_code}")
-                
+                self.logger.error(
+                    f"Process terminated during health check. Exit code: {exit_code}"
+                )
+
                 with self._state_lock:
                     if self._state == ProcessState.STARTING:
                         self._set_state(ProcessState.ERROR)
@@ -408,13 +426,13 @@ class OpenWebUIRunner:
         """
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         separator = f"{'=' * 80}\n{timestamp} - {action}\n{'=' * 80}"
-        
+
         # Write to output lines
         with self._output_lock:
-            for line in separator.split('\n'):
+            for line in separator.split("\n"):
                 self._output_lines.append(line)
                 self._notify_output_subscribers(line)
-        
+
         # Write to log file
         with self._log_file_lock:
             if self._log_file:

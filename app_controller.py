@@ -31,9 +31,7 @@ class AppController:
         self.logger.info("Initializing application components")
 
         # Create runner instance
-        self.runner = OpenWebUIRunner(
-            port=config.PORT, health_check_timeout=config.HEALTH_CHECK_TIMEOUT
-        )
+        self.runner = OpenWebUIRunner(port=config.PORT)
 
         # Create main window instance with initial starting page
         # (since auto-start happens immediately after window is ready)
@@ -92,7 +90,7 @@ class AppController:
         Ensures runner is stopped before window closes.
         """
         self.logger.info("Window closing event received")
-        
+
         if self.runner:
             state = self.runner.get_state()
             if state in (ProcessState.RUNNING, ProcessState.STARTING):
