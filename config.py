@@ -12,9 +12,6 @@ the Open WebUI Launcher application.
 # Read from PORT environment variable, default to 8080
 PORT = int(os.getenv("PORT", "8080"))
 
-# Maximum time to wait for service health check in seconds
-HEALTH_CHECK_TIMEOUT = 60
-
 # Time between health check attempts in seconds
 HEALTH_CHECK_INTERVAL = 1.0
 

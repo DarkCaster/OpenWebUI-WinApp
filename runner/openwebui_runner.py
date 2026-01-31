@@ -17,16 +17,14 @@ class OpenWebUIRunner:
     and graceful shutdown of the open-webui service.
     """
 
-    def __init__(self, port: Optional[int] = None, health_check_timeout: int = 60):
+    def __init__(self, port: Optional[int] = None):
         """
         Initialize the Open WebUI runner.
 
         Args:
             port: Port number for open-webui service (defaults to PORT env var or 8080)
-            health_check_timeout: Maximum time to wait for service health check
         """
         self.port = port or int(os.getenv("PORT", "8080"))
-        self.health_check_timeout = health_check_timeout
 
         self._process: Optional[subprocess.Popen] = None
         self._state = ProcessState.STOPPED
@@ -43,7 +41,7 @@ class OpenWebUIRunner:
         self._state_subscribers: List[Callable[[ProcessState, ProcessState], None]] = []
 
         self._health_checker = HealthChecker(
-            host="127.0.0.1", port=self.port, timeout=health_check_timeout, interval=1.0
+            host="127.0.0.1", port=self.port, timeout=60, interval=1.0
         )
 
         self.logger = get_logger(__name__)
@@ -354,8 +352,9 @@ class OpenWebUIRunner:
         """
         Wait for service to become healthy and update state accordingly.
         Runs in background thread after process start.
+        Waits indefinitely until service starts, process terminates, or state changes.
         """
-        self.logger.debug("Waiting for health check")
+        self.logger.debug("Waiting for health check (no timeout)")
 
         # Give process a moment to start
         time.sleep(0.5)
@@ -370,9 +369,15 @@ class OpenWebUIRunner:
                     self._set_state(ProcessState.ERROR)
             return
 
-        # Perform health check with periodic process monitoring
+        # Perform health check with periodic process monitoring (indefinitely)
         start_time = time.time()
-        while time.time() - start_time < self.health_check_timeout:
+        while True:
+            # Check if state has changed from STARTING (user called stop/restart)
+            with self._state_lock:
+                if self._state != ProcessState.STARTING:
+                    self.logger.info(f"Health check stopped due to state change to {self._state}")
+                    return
+
             # Check if process is still running
             if self._process and self._process.poll() is not None:
                 exit_code = self._process.returncode
@@ -393,21 +398,6 @@ class OpenWebUIRunner:
                 return
 
             time.sleep(self._health_checker.interval)
-
-        # Timeout reached
-        self.logger.error("Health check timeout")
-        
-        # Check if process is still running
-        if self._process:
-            exit_code = self._process.poll()
-            if exit_code is not None:
-                self.logger.error(f"Process has exited with code: {exit_code}")
-            else:
-                self.logger.error("Process is still running but not responding to health checks")
-        
-        with self._state_lock:
-            if self._state == ProcessState.STARTING:
-                self._set_state(ProcessState.ERROR)
 
     def _write_separator(self, action: str) -> None:
         """
