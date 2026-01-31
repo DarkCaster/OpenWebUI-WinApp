@@ -10,7 +10,7 @@ def setup_logging(
     date_format: str | None = None,
 ) -> None:
     """
-    Setup the root logger with console handler.
+    Setup the root logger with console handler and file handler.
 
     Args:
         level: Logging level (default: logging.INFO)
@@ -32,6 +32,11 @@ def setup_logging(
     console_handler.setLevel(level)
     console_handler.setFormatter(formatter)
 
+    # Create file handler
+    file_handler = logging.FileHandler("launcher.log", mode='a', encoding='utf-8')
+    file_handler.setLevel(level)
+    file_handler.setFormatter(formatter)
+
     # Configure root logger
     root_logger = logging.getLogger()
     root_logger.setLevel(level)
@@ -40,8 +45,9 @@ def setup_logging(
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
 
-    # Add our console handler
+    # Add our console handler and file handler
     root_logger.addHandler(console_handler)
+    root_logger.addHandler(file_handler)
     loggerInitialized = True
 
 
