@@ -17,6 +17,14 @@ venv.bak/
 
 # Local python distribution
 py_dist/
+cache/
+
+# Local data for open-webui, logs, secrets, configs
+huggingface/
+open_webui/
+.webui_secret_key
+*.log
+*.lnk
 
 # Subdirs inside tools dir
 /tools/**/
