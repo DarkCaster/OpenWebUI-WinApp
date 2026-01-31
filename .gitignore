@@ -22,6 +22,7 @@ cache/
 # Local data for open-webui, logs, secrets, configs
 huggingface/
 open_webui/
+webview_cache/
 .webui_secret_key
 *.log
 *.lnk
