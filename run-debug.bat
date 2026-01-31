@@ -41,6 +41,7 @@ call "%venv_dir%\Scripts\activate.bat"
 if %errorlevel% neq 0 exit /b %errorlevel%
 
 echo Starting up
-start uv run --gui-script "%script_dir%main.py" %*
+uv run "%script_dir%main.py" %*
 
+pause
 endlocal
