@@ -50,6 +50,7 @@ class MainWindow:
         self.window: Optional[webview.Window] = None
         self.console_view = ConsoleView(max_lines=1000)
         self.console_visible = False
+        self.auto_scroll_enabled = True
         self.window_ready = False
 
         # Console update throttling
@@ -57,6 +58,10 @@ class MainWindow:
         self._console_update_lock = threading.Lock()
         self._console_update_thread: Optional[threading.Thread] = None
         self._console_update_interval = 0.5  # seconds
+
+        # Console incremental update tracking
+        self._console_initialized = False
+        self._last_console_line_count = 0
 
         self.logger = get_logger(__name__)
         self.logger.info(f"MainWindow initialized ({width}x{height})")
@@ -74,6 +79,7 @@ class MainWindow:
                 "stop": self.handle_stop,
                 "restart": self.handle_restart,
                 "toggle_console": self.handle_toggle_console,
+                "toggle_auto_scroll": self.handle_toggle_auto_scroll,
                 "exit": self.handle_exit,
             }
         )
@@ -172,6 +178,9 @@ class MainWindow:
 
         if self.console_visible:
             self.logger.info("Console panel shown")
+            # Reset console state for fresh initialization
+            self._console_initialized = False
+            self._last_console_line_count = 0
             # Update console with current output
             if self.runner:
                 lines = self.runner.get_output_lines()
@@ -180,6 +189,9 @@ class MainWindow:
             self._start_console_update_thread()
         else:
             self.logger.info("Console panel hidden")
+            # Reset console state
+            self._console_initialized = False
+            self._last_console_line_count = 0
             # Stop console update thread
             self._stop_console_update_thread()
             # Reload current state page or URL
@@ -213,12 +225,47 @@ class MainWindow:
         """
         Actually perform the console HTML update.
 
+        Uses incremental updates after initial load to avoid disrupting scroll position.
+
         Args:
             lines: List of output lines to display
         """
-        self.console_view.update_content(lines)
-        html = self.console_view.generate_html(lines)
-        self.load_html(html)
+        current_line_count = len(lines)
+
+        # Check if we need to do a full reload
+        # (first time, or line count decreased indicating buffer was trimmed)
+        if not self._console_initialized or current_line_count < self._last_console_line_count:
+            self.logger.debug("Performing full console initialization")
+            self.console_view.update_content(lines)
+            html = self.console_view.generate_initial_html()
+            self.load_html(html)
+            self._console_initialized = True
+            self._last_console_line_count = current_line_count
+        else:
+            # Incremental update: append only new lines
+            new_line_count = current_line_count - self._last_console_line_count
+            
+            if new_line_count > 0:
+                # Extract new lines
+                new_lines = lines[-new_line_count:]
+                
+                # Generate JavaScript to append new lines
+                script = self.console_view.generate_append_script(
+                    new_lines, 
+                    self.auto_scroll_enabled
+                )
+                
+                if script and self.window:
+                    try:
+                        self.window.evaluate_js(script)
+                        self._last_console_line_count = current_line_count
+                        self.logger.debug(f"Appended {new_line_count} new lines to console")
+                    except Exception as e:
+                        self.logger.error(f"Failed to evaluate JavaScript for console update: {e}")
+                        # Fall back to full reload on error
+                        self._console_initialized = False
+                        self._perform_console_update(lines)
+            # If no new lines, do nothing (no need to update)
 
     def _start_console_update_thread(self) -> None:
         """
@@ -340,6 +387,20 @@ class MainWindow:
         """
         self.logger.info("Toggle console action triggered from menu")
         self.toggle_console()
+
+    def handle_toggle_auto_scroll(self) -> None:
+        """
+        Menu callback for toggle auto-scroll action.
+        """
+        self.auto_scroll_enabled = not self.auto_scroll_enabled
+        self.logger.info(f"Auto-scroll {'enabled' if self.auto_scroll_enabled else 'disabled'}")
+        
+        # If console is visible and auto-scroll was just enabled, scroll to bottom
+        if self.console_visible and self.auto_scroll_enabled and self.window:
+            try:
+                self.window.evaluate_js("scrollToBottom();")
+            except Exception as e:
+                self.logger.error(f"Failed to scroll to bottom: {e}")
 
     def handle_exit(self) -> None:
         """

@@ -21,26 +21,17 @@ class ConsoleView:
         self._lines: List[str] = []
         self.logger = get_logger(__name__)
 
-    def generate_html(self, lines: List[str]) -> str:
+    def generate_initial_html(self) -> str:
         """
-        Convert list of output lines to styled HTML.
-
-        Args:
-            lines: List of console output lines
+        Generate complete initial HTML for console with JavaScript utilities.
 
         Returns:
-            HTML string with styled console output
+            HTML string with styled console output and JavaScript functions
         """
         # Escape HTML special characters in lines
         escaped_lines = []
-        for line in lines:
-            escaped_line = (
-                line.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace('"', "&quot;")
-                .replace("'", "&#x27;")
-            )
+        for line in self._lines:
+            escaped_line = self._escape_html(line)
             escaped_lines.append(escaped_line)
 
         # Join lines with HTML line breaks
@@ -73,24 +64,115 @@ class ConsoleView:
                     white-space: pre-wrap;
                     word-wrap: break-word;
                 }}
-                
-                /* Ensure auto-scroll to bottom */
-                html {{
-                    scroll-behavior: smooth;
-                }}
             </style>
             <script>
-                // Auto-scroll to bottom when content loads
-                window.addEventListener('load', function() {{
+                // Append new lines to console content
+                function appendLines(lines, autoScroll) {{
+                    var container = document.getElementById('console-content');
+                    
+                    // If content is placeholder, clear it first
+                    if (container.innerHTML === 'No output yet...') {{
+                        container.innerHTML = '';
+                    }}
+                    
+                    // Add separator if there's existing content
+                    if (container.innerHTML && lines.length > 0) {{
+                        container.innerHTML += '<br>';
+                    }}
+                    
+                    // Append new lines
+                    container.innerHTML += lines.join('<br>');
+                    
+                    // Instantly scroll to bottom if auto-scroll enabled
+                    if (autoScroll) {{
+                        window.scrollTo(0, document.body.scrollHeight);
+                    }}
+                }}
+                
+                // Scroll to bottom instantly
+                function scrollToBottom() {{
                     window.scrollTo(0, document.body.scrollHeight);
-                }});
+                }}
+                
+                // Get current scroll position
+                function getScrollPosition() {{
+                    return {{
+                        scrollTop: window.pageYOffset || document.documentElement.scrollTop,
+                        scrollHeight: document.body.scrollHeight,
+                        clientHeight: window.innerHeight
+                    }};
+                }}
             </script>
         </head>
         <body>
-            <div class="console-content">{content}</div>
+            <div id="console-content" class="console-content">{content}</div>
         </body>
         </html>
         """
+
+    def generate_append_script(self, new_lines: List[str], auto_scroll: bool) -> str:
+        """
+        Generate JavaScript code to append new lines to existing content.
+
+        Args:
+            new_lines: List of new lines to append
+            auto_scroll: Whether to automatically scroll to bottom
+
+        Returns:
+            JavaScript code as string
+        """
+        if not new_lines:
+            return ""
+
+        # Escape HTML special characters and JavaScript strings
+        escaped_lines = []
+        for line in new_lines:
+            # First escape HTML
+            escaped_line = self._escape_html(line)
+            # Then escape for JavaScript string (escape backslashes and quotes)
+            escaped_line = escaped_line.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n").replace("\r", "\\r")
+            escaped_lines.append(f"'{escaped_line}'")
+
+        # Build JavaScript array
+        lines_array = "[" + ", ".join(escaped_lines) + "]"
+        auto_scroll_str = "true" if auto_scroll else "false"
+
+        return f"appendLines({lines_array}, {auto_scroll_str});"
+
+    def _escape_html(self, text: str) -> str:
+        """
+        Escape HTML special characters.
+
+        Args:
+            text: Text to escape
+
+        Returns:
+            Escaped text safe for HTML
+        """
+        return (
+            text.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+            .replace("'", "&#x27;")
+        )
+
+    def generate_html(self, lines: List[str], auto_scroll: bool = True) -> str:
+        """
+        Convert list of output lines to styled HTML.
+
+        This method is kept for backward compatibility but now delegates
+        to generate_initial_html after updating internal state.
+
+        Args:
+            lines: List of console output lines
+            auto_scroll: Whether to automatically scroll to bottom on load (ignored)
+
+        Returns:
+            HTML string with styled console output
+        """
+        self.update_content(lines)
+        return self.generate_initial_html()
 
     def update_content(self, lines: List[str]) -> None:
         """

@@ -18,7 +18,8 @@ class MenuBuilder:
 
         Args:
             callbacks: Dictionary mapping action names to callback functions.
-                      Expected keys: 'start', 'stop', 'restart', 'toggle_console', 'exit'
+                      Expected keys: 'start', 'stop', 'restart', 'toggle_console', 
+                      'toggle_auto_scroll', 'exit'
 
         Returns:
             List of menu items compatible with pywebview (list of webview.Menu objects)
@@ -35,7 +36,8 @@ class MenuBuilder:
             MenuAction('Stop', callbacks.get("stop", lambda: None)),
             MenuAction('Restart', callbacks.get("restart", lambda: None)),
             MenuSeparator(),
-            MenuAction('Toggle Console', callbacks.get("toggle_console", lambda: None))
+            MenuAction('Toggle Console', callbacks.get("toggle_console", lambda: None)),
+            MenuAction('Toggle Auto-Scroll', callbacks.get("toggle_auto_scroll", lambda: None))
         ]
         control_menu = Menu('Control', control_menu_items)
 
@@ -58,6 +60,7 @@ class MenuBuilder:
             "stop": False,
             "restart": False,
             "toggle_console": True,  # Always enabled
+            "toggle_auto_scroll": True,  # Always enabled
             "exit": True,  # Always enabled
         }
 
