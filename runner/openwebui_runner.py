@@ -202,12 +202,22 @@ class OpenWebUIRunner:
         self.logger.info("Restarting open-webui")
         self._write_separator("RESTARTING")
 
-        if not self.stop():
-            self.logger.error("Failed to stop process during restart")
-            return False
+        # Check current state
+        current_state = self.get_state()
 
-        # Give a brief moment for cleanup
-        time.sleep(1)
+        # Only stop if process is in a state that requires stopping
+        if current_state in (ProcessState.STARTING, ProcessState.RUNNING, ProcessState.STOPPING):
+            if not self.stop():
+                self.logger.error("Failed to stop process during restart")
+                return False
+            # Give a brief moment for cleanup
+            time.sleep(1)
+        elif current_state in (ProcessState.STOPPED, ProcessState.ERROR):
+            # Process is already stopped or in error state, skip stop step
+            self.logger.debug(f"Process is in {current_state} state, skipping stop step")
+        else:
+            # Unexpected state
+            self.logger.warning(f"Unexpected state during restart: {current_state}")
 
         if not self.start():
             self.logger.error("Failed to start process during restart")
