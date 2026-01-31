@@ -1,6 +1,6 @@
 from logger import get_logger
 from runner import OpenWebUIRunner, ProcessState
-from ui import MainWindow, StatusPage
+from ui import MainWindow, StatusPage, SystemTray
 import config
 
 
@@ -19,6 +19,8 @@ class AppController:
         self.logger = get_logger(__name__)
         self.runner: OpenWebUIRunner = None
         self.window: MainWindow = None
+        self.system_tray: SystemTray = None
+        self.is_exiting = False
 
         self.logger.info("AppController initialized")
 
@@ -43,10 +45,18 @@ class AppController:
             initial_html=StatusPage.starting_page(),
             on_ready_callback=self._on_window_ready,
             on_closing_callback=self._on_window_closing,
+            minimize_to_tray=True,
         )
 
         # Initialize window
         self.window.initialize()
+
+        # Create system tray instance
+        self.system_tray = SystemTray(
+            title=config.SYSTEM_TRAY_TITLE,
+            on_open=self._on_tray_open,
+            on_exit=self._on_tray_exit,
+        )
 
         # Wire up callbacks
         self.runner.subscribe_to_state_change(self.on_runner_state_changed)
@@ -61,6 +71,10 @@ class AppController:
         Shows the main window (blocking call). Auto-start happens after window is ready.
         """
         self.logger.info("Starting application")
+
+        # Start system tray before showing window
+        if self.system_tray:
+            self.system_tray.start()
 
         # Show window (blocking call)
         # Auto-start will be triggered by _on_window_ready callback
@@ -88,9 +102,18 @@ class AppController:
         Callback executed when the window is being closed.
 
         Ensures runner is stopped before window closes.
+        Only stops runner if this is a real exit (not minimize to tray).
         """
         self.logger.info("Window closing event received")
 
+        # Check if this is a real exit or just minimize to tray
+        if self.window and not self.window.should_exit:
+            self.logger.info("Window minimized to tray, runner continues")
+            return
+
+        # This is a real exit, stop the runner
+        self.is_exiting = True
+        
         if self.runner:
             state = self.runner.get_state()
             if state in (ProcessState.RUNNING, ProcessState.STARTING):
@@ -101,14 +124,59 @@ class AppController:
                 except Exception as e:
                     self.logger.error(f"Error stopping runner during window close: {e}")
 
+    def _on_tray_open(self) -> None:
+        """
+        Callback executed when user clicks "Open" in system tray or left-clicks icon.
+
+        Restores the window from system tray.
+        """
+        self.logger.info("Tray open action received")
+        
+        if self.window:
+            self.window.restore()
+
+    def _on_tray_exit(self) -> None:
+        """
+        Callback executed when user clicks "Exit" in system tray.
+
+        Stops runner, stops system tray, and exits application.
+        """
+        self.logger.info("Tray exit action received")
+        
+        self.is_exiting = True
+
+        # Stop runner if running
+        if self.runner:
+            state = self.runner.get_state()
+            if state in (ProcessState.RUNNING, ProcessState.STARTING):
+                self.logger.info("Stopping runner due to tray exit")
+                try:
+                    self.runner.stop(timeout=config.SHUTDOWN_TIMEOUT)
+                except Exception as e:
+                    self.logger.error(f"Error stopping runner during tray exit: {e}")
+
+        # Stop system tray
+        if self.system_tray:
+            try:
+                self.system_tray.stop()
+            except Exception as e:
+                self.logger.error(f"Error stopping system tray: {e}")
+
+        # Destroy window
+        if self.window:
+            self.window.destroy()
+
     def shutdown(self) -> None:
         """
         Graceful application shutdown.
 
-        Stops the runner and performs cleanup.
+        Stops the runner, system tray, and performs cleanup.
         """
         self.logger.info("Shutting down application")
 
+        self.is_exiting = True
+
+        # Stop runner if running
         if self.runner:
             state = self.runner.get_state()
             if state in (ProcessState.RUNNING, ProcessState.STARTING):
@@ -117,6 +185,14 @@ class AppController:
                     self.runner.stop(timeout=config.SHUTDOWN_TIMEOUT)
                 except Exception as e:
                     self.logger.error(f"Error stopping runner during shutdown: {e}")
+
+        # Stop system tray
+        if self.system_tray:
+            try:
+                self.logger.info("Stopping system tray during shutdown")
+                self.system_tray.stop()
+            except Exception as e:
+                self.logger.error(f"Error stopping system tray during shutdown: {e}")
 
         self.logger.info("Application shutdown complete")
 

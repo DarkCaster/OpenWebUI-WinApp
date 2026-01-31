@@ -29,3 +29,6 @@ WINDOW_HEIGHT = 800
 
 # Console panel height when visible in pixels
 CONSOLE_HEIGHT = 200
+
+# System tray icon title/tooltip text
+SYSTEM_TRAY_TITLE = "Open WebUI Launcher"

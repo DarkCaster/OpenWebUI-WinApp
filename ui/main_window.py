@@ -26,6 +26,7 @@ class MainWindow:
         initial_html: Optional[str] = None,
         on_ready_callback: Optional[Callable[[], None]] = None,
         on_closing_callback: Optional[Callable[[], None]] = None,
+        minimize_to_tray: bool = True,
     ):
         """
         Initialize the main window.
@@ -38,6 +39,7 @@ class MainWindow:
             initial_html: Initial HTML content to display when window is created
             on_ready_callback: Callback function to execute after window is ready
             on_closing_callback: Callback function to execute when window is closing
+            minimize_to_tray: If True, closing window hides to tray instead of exiting
         """
         self.width = width
         self.height = height
@@ -46,12 +48,15 @@ class MainWindow:
         self.initial_html = initial_html
         self.on_ready_callback = on_ready_callback
         self.on_closing_callback = on_closing_callback
+        self.minimize_to_tray = minimize_to_tray
 
         self.window: Optional[webview.Window] = None
         self.console_view = ConsoleView(max_lines=1000)
         self.console_visible = False
         self.auto_scroll_enabled = True
         self.window_ready = False
+        self.is_hidden = False
+        self.should_exit = False
 
         # Console auto-open tracking for startup
         self.console_auto_opened = False
@@ -490,6 +495,9 @@ class MainWindow:
         """
         self.logger.info("Exit action triggered from menu")
 
+        # Set flag to indicate this is a real exit (not minimize to tray)
+        self.should_exit = True
+
         # Trigger the closing callback (which will stop the runner)
         if self.on_closing_callback:
             self.on_closing_callback()
@@ -541,15 +549,64 @@ class MainWindow:
         else:
             self.logger.warning(f"Back navigation ignored - service not running (state: {state})")
 
-    def _on_window_closing_event(self) -> None:
+    def _on_window_closing_event(self) -> bool:
         """
         Event handler called when window is being closed.
+        
+        Returns:
+            True to allow window close, False to cancel
         """
         self.logger.info("Window closing event triggered")
 
-        # Call the closing callback if provided
+        # Check if we should minimize to tray instead of closing
+        if self.minimize_to_tray and not self.should_exit:
+            self.logger.info("Minimizing to system tray instead of closing")
+            self.hide()
+            # Return False to cancel the close event
+            return False
+
+        # This is a real exit, call the closing callback
+        self.logger.info("Proceeding with window close")
         if self.on_closing_callback:
             self.on_closing_callback()
+        
+        return True
+
+    def hide(self) -> None:
+        """
+        Hide window to system tray.
+        """
+        if not self.window:
+            self.logger.error("Cannot hide window: not initialized")
+            return
+
+        self.logger.info("Hiding window to system tray")
+        self.is_hidden = True
+        self.window.hide()
+
+    def restore(self) -> None:
+        """
+        Restore window from system tray.
+        """
+        if not self.window:
+            self.logger.error("Cannot restore window: not initialized")
+            return
+
+        self.logger.info("Restoring window from system tray")
+        self.is_hidden = False
+        self.window.show()
+
+    def destroy(self) -> None:
+        """
+        Destroy the window.
+        """
+        if not self.window:
+            self.logger.error("Cannot destroy window: not initialized")
+            return
+
+        self.logger.info("Destroying window")
+        self.should_exit = True
+        self.window.destroy()
 
     def _load_state_page(self, state: ProcessState) -> None:
         """
