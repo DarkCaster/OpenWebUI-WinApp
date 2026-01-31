@@ -8,6 +8,10 @@ Contains all configurable parameters and constants used throughout
 the Open WebUI Launcher application.
 """
 
+# Host address for open-webui service
+# Read from HOST environment variable, default to 127.0.0.1
+HOST = os.getenv("HOST", "127.0.0.1")
+
 # Port number for open-webui service
 # Read from PORT environment variable, default to 8080
 PORT = int(os.getenv("PORT", "8080"))
