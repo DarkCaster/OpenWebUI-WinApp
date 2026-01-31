@@ -85,8 +85,6 @@ class MainWindow:
                 "toggle_console": self.handle_toggle_console,
                 "toggle_auto_scroll": self.handle_toggle_auto_scroll,
                 "exit": self.handle_exit,
-                "home": self.handle_home,
-                "back": self.handle_back,
             }
         )
 
@@ -497,59 +495,6 @@ class MainWindow:
         # Destroy the window
         if self.window:
             self.window.destroy()
-
-    def handle_home(self) -> None:
-        """
-        Menu callback for home navigation action.
-        """
-        self.logger.info("Home action triggered from menu")
-
-        if not self.window:
-            self.logger.error("No window available")
-            return
-
-        if not self.runner:
-            self.logger.error("No runner available")
-            return
-
-        # Only work if service is running
-        state = self.runner.get_state()
-        if state != ProcessState.RUNNING:
-            self.logger.debug(f"Home action ignored: service not running (state={state})")
-            return
-
-        try:
-            url = f"http://127.0.0.1:{self.runner.port}"
-            self.logger.info(f"Navigating to home: {url}")
-            self.load_url(url)
-        except Exception as e:
-            self.logger.error(f"Error navigating to home: {e}")
-
-    def handle_back(self) -> None:
-        """
-        Menu callback for back navigation action.
-        """
-        self.logger.info("Back action triggered from menu")
-
-        if not self.window:
-            self.logger.error("No window available")
-            return
-
-        if not self.runner:
-            self.logger.error("No runner available")
-            return
-
-        # Only work if service is running
-        state = self.runner.get_state()
-        if state != ProcessState.RUNNING:
-            self.logger.debug(f"Back action ignored: service not running (state={state})")
-            return
-
-        try:
-            self.window.evaluate_js("window.history.back()")
-            self.logger.debug("Executed browser back navigation")
-        except Exception as e:
-            self.logger.error(f"Error executing back navigation: {e}")
 
     def _on_window_closing_event(self) -> None:
         """

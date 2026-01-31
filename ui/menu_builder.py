@@ -19,7 +19,7 @@ class MenuBuilder:
         Args:
             callbacks: Dictionary mapping action names to callback functions.
                       Expected keys: 'start', 'stop', 'restart', 'toggle_console', 
-                      'toggle_auto_scroll', 'exit', 'home', 'back'
+                      'toggle_auto_scroll', 'exit'
 
         Returns:
             List of menu items compatible with pywebview (list of webview.Menu objects)
@@ -29,13 +29,6 @@ class MenuBuilder:
             MenuAction('Exit', callbacks.get("exit", lambda: None))
         ]
         file_menu = Menu('File', file_menu_items)
-
-        # Navigation menu
-        navigation_menu_items = [
-            MenuAction('Home', callbacks.get("home", lambda: None)),
-            MenuAction('Back', callbacks.get("back", lambda: None))
-        ]
-        navigation_menu = Menu('Navigation', navigation_menu_items)
 
         # Control menu
         control_menu_items = [
@@ -48,7 +41,7 @@ class MenuBuilder:
         ]
         control_menu = Menu('Control', control_menu_items)
 
-        return [file_menu, navigation_menu, control_menu]
+        return [file_menu, control_menu]
 
     @staticmethod
     def get_menu_state(process_state: ProcessState) -> Dict[str, bool]:
@@ -69,8 +62,6 @@ class MenuBuilder:
             "toggle_console": True,  # Always enabled
             "toggle_auto_scroll": True,  # Always enabled
             "exit": True,  # Always enabled
-            "home": False,
-            "back": False,
         }
 
         if process_state == ProcessState.STOPPED:
@@ -85,9 +76,6 @@ class MenuBuilder:
             # Stop and Restart should be enabled
             state["stop"] = True
             state["restart"] = True
-            # Navigation commands should be enabled
-            state["home"] = True
-            state["back"] = True
 
         elif process_state == ProcessState.STOPPING:
             # Nothing should be enabled during stopping (except always-enabled items)
