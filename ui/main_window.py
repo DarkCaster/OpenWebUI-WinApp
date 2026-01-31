@@ -53,6 +53,10 @@ class MainWindow:
         self.auto_scroll_enabled = True
         self.window_ready = False
 
+        # Console auto-open tracking for startup
+        self.console_auto_opened = False
+        self.console_manually_toggled_during_startup = False
+
         # Console update throttling
         self._console_update_requested = False
         self._console_update_lock = threading.Lock()
@@ -170,10 +174,86 @@ class MainWindow:
         self.logger.debug("Loading HTML content")
         self.window.load_html(html)
 
+    def open_console_auto(self) -> None:
+        """
+        Automatically open console (used during startup).
+
+        Sets flags to track that console was auto-opened.
+        """
+        self.logger.info("Auto-opening console for startup")
+        self.console_visible = True
+        self.console_auto_opened = True
+        self.console_manually_toggled_during_startup = False
+
+        # Reset console state for fresh initialization
+        self._console_initialized = False
+        self._last_console_line_count = 0
+
+        # Update console with current output
+        if self.runner:
+            lines = self.runner.get_output_lines()
+            self._perform_console_update(lines)
+
+        # Start console update thread for periodic updates
+        self._start_console_update_thread()
+
+    def close_console_auto(self) -> None:
+        """
+        Automatically close console (used when startup completes).
+
+        Resets auto-open tracking flags.
+        """
+        self.logger.info("Auto-closing console after startup")
+        self.console_visible = False
+        self.console_auto_opened = False
+        self.console_manually_toggled_during_startup = False
+
+        # Reset console state
+        self._console_initialized = False
+        self._last_console_line_count = 0
+
+        # Stop console update thread
+        self._stop_console_update_thread()
+
+    def reset_startup_tracking(self) -> None:
+        """
+        Reset console auto-open tracking flags.
+
+        Called when transitioning to STOPPED or ERROR states.
+        """
+        self.logger.debug("Resetting startup tracking flags")
+        self.console_auto_opened = False
+        self.console_manually_toggled_during_startup = False
+
+    def should_auto_close_console(self) -> bool:
+        """
+        Determine if console should be automatically closed.
+
+        Returns:
+            True if console was auto-opened and user didn't manually toggle it
+        """
+        should_close = (
+            self.console_auto_opened and not self.console_manually_toggled_during_startup
+        )
+        self.logger.debug(
+            f"Should auto-close console: {should_close} "
+            f"(auto_opened={self.console_auto_opened}, "
+            f"manually_toggled={self.console_manually_toggled_during_startup})"
+        )
+        return should_close
+
     def toggle_console(self) -> None:
         """
         Show/hide console panel.
         """
+        # Check if we're in STARTING state and track manual toggle
+        if self.runner:
+            state = self.runner.get_state()
+            if state == ProcessState.STARTING:
+                self.logger.debug("Console toggled manually during startup")
+                self.console_manually_toggled_during_startup = True
+                self.console_auto_opened = False
+
         self.console_visible = not self.console_visible
 
         if self.console_visible:

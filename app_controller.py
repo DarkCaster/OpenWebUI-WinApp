@@ -136,34 +136,72 @@ class AppController:
         if self.window:
             self.window.update_menu_state(new_state)
 
-        # Skip main content UI updates if console is visible
-        if self.window and self.window.console_visible:
-            self.logger.debug("Console visible, skipping state page update")
-            return
-
         # Load appropriate page based on new state
         if new_state == ProcessState.STOPPED:
+            # Reset startup tracking flags
+            if self.window:
+                self.window.reset_startup_tracking()
+            
+            # Skip main content UI updates if console is visible
+            if self.window and self.window.console_visible:
+                self.logger.debug("Console visible, skipping state page update")
+                return
+            
             self.logger.debug("Loading stopped page")
             if self.window:
                 self.window.load_html(StatusPage.stopped_page())
 
         elif new_state == ProcessState.STARTING:
+            # Auto-open console to show startup messages
+            if self.window:
+                self.window.open_console_auto()
+            
+            # Load starting page in background (will be shown if console is toggled off)
             self.logger.debug("Loading starting page")
             if self.window:
                 self.window.load_html(StatusPage.starting_page())
 
         elif new_state == ProcessState.RUNNING:
-            self.logger.debug("Loading Open WebUI URL")
+            self.logger.debug("Service is running")
             if self.window and self.runner:
                 url = f"http://127.0.0.1:{self.runner.port}"
-                self.window.load_url(url)
+                
+                # Check if console should be auto-closed
+                if self.window.should_auto_close_console():
+                    # Auto-close console and load URL
+                    self.logger.info("Auto-closing console and loading Open WebUI URL")
+                    self.window.close_console_auto()
+                    self.window.load_url(url)
+                else:
+                    # User manually controlled console, respect their choice
+                    if not self.window.console_visible:
+                        # Console is hidden, load URL
+                        self.logger.debug("Loading Open WebUI URL")
+                        self.window.load_url(url)
+                    else:
+                        # Console is visible by user choice, don't load URL yet
+                        self.logger.debug("Console visible by user choice, not loading URL")
 
         elif new_state == ProcessState.STOPPING:
+            # Skip main content UI updates if console is visible
+            if self.window and self.window.console_visible:
+                self.logger.debug("Console visible, skipping state page update")
+                return
+            
             self.logger.debug("Loading stopping page")
             if self.window:
                 self.window.load_html(StatusPage.stopping_page())
 
         elif new_state == ProcessState.ERROR:
+            # Reset startup tracking flags
+            if self.window:
+                self.window.reset_startup_tracking()
+            
+            # Skip main content UI updates if console is visible
+            if self.window and self.window.console_visible:
+                self.logger.debug("Console visible, skipping state page update")
+                return
+            
             self.logger.debug("Loading error page")
             if self.window:
                 # Get recent output lines to include in error message
