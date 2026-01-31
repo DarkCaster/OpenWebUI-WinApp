@@ -527,7 +527,7 @@ class MainWindow:
         
         # Only perform navigation if service is running
         if state == ProcessState.RUNNING:
-            url = f"http://127.0.0.1:{self.runner.port}"
+            url = f"http://{self.runner.host}:{self.runner.port}"
             self.logger.info(f"Navigating to home: {url}")
             self.load_url(url)
         else:
@@ -644,5 +644,5 @@ class MainWindow:
         elif state == ProcessState.RUNNING:
             # This should be handled by loading the actual URL
             if self.runner:
-                url = f"http://127.0.0.1:{self.runner.port}"
+                url = f"http://{self.runner.host}:{self.runner.port}"
                 self.load_url(url)

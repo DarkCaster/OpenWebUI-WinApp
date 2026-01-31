@@ -245,7 +245,7 @@ class AppController:
         elif new_state == ProcessState.RUNNING:
             self.logger.debug("Service is running")
             if self.window and self.runner:
-                url = f"http://127.0.0.1:{self.runner.port}"
+                url = f"http://{self.runner.host}:{self.runner.port}"
                 
                 # Check if console should be auto-closed
                 if self.window.should_auto_close_console():

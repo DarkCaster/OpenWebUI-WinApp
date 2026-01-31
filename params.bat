@@ -5,6 +5,10 @@ REM UV settings
 set "UV_CONCURRENT_DOWNLOADS=4"
 set "UV_CONCURRENT_INSTALLS=2"
 
+
+REM open-webui settings
+set "HOST=127.0.0.10"
+set "PORT=58080"
 set "DATA_DIR=%base_dir%open_webui"
 set "ENV=prod"
 set "WEBUI_AUTH=False"
@@ -13,6 +17,7 @@ set "HF_HOME=%base_dir%huggingface"
 set "HF_HUB_DISABLE_EXPERIMENTAL_WARNING=1"
 set "HF_HUB_DISABLE_TELEMETRY=1"
 set "HF_HUB_DISABLE_SYMLINKS_WARNING=1"
+
 
 REM proxy server, UV will use it to download packages and python dist
 REM set "ALL_PROXY=socks5://user:password@127.0.0.1:1080"
