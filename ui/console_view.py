@@ -21,9 +21,12 @@ class ConsoleView:
         self._lines: List[str] = []
         self.logger = get_logger(__name__)
 
-    def generate_initial_html(self) -> str:
+    def generate_initial_html(self, auto_scroll: bool = True) -> str:
         """
         Generate complete initial HTML for console with JavaScript utilities.
+
+        Args:
+            auto_scroll: Whether to automatically scroll to bottom on page load
 
         Returns:
             HTML string with styled console output and JavaScript functions
@@ -36,6 +39,18 @@ class ConsoleView:
 
         # Join lines with HTML line breaks
         content = "<br>".join(escaped_lines) if escaped_lines else "No output yet..."
+
+        # Add on-load scroll script if auto-scroll is enabled
+        onload_script = ""
+        if auto_scroll:
+            onload_script = """
+            <script>
+                // Scroll to bottom on initial page load
+                window.addEventListener('load', function() {
+                    scrollToBottom();
+                });
+            </script>
+            """
 
         return f"""
         <!DOCTYPE html>
@@ -106,6 +121,7 @@ class ConsoleView:
         </head>
         <body>
             <div id="console-content" class="console-content">{content}</div>
+            {onload_script}
         </body>
         </html>
         """
@@ -166,13 +182,13 @@ class ConsoleView:
 
         Args:
             lines: List of console output lines
-            auto_scroll: Whether to automatically scroll to bottom on load (ignored)
+            auto_scroll: Whether to automatically scroll to bottom on load
 
         Returns:
             HTML string with styled console output
         """
         self.update_content(lines)
-        return self.generate_initial_html()
+        return self.generate_initial_html(auto_scroll=auto_scroll)
 
     def update_content(self, lines: List[str]) -> None:
         """

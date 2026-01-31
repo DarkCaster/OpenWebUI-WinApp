@@ -317,7 +317,7 @@ class MainWindow:
         if not self._console_initialized or current_line_count < self._last_console_line_count:
             self.logger.debug("Performing full console initialization")
             self.console_view.update_content(lines)
-            html = self.console_view.generate_initial_html()
+            html = self.console_view.generate_initial_html(auto_scroll=self.auto_scroll_enabled)
             self.load_html(html)
             self._console_initialized = True
             self._last_console_line_count = current_line_count
