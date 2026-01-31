@@ -86,7 +86,7 @@ class OpenWebUIRunner:
 
             # Launch subprocess using Python interpreter to run startup script
             self._process = subprocess.Popen(
-                [sys.executable, "start_openwebui.py", "--host", self.host, "--port", str(self.port)],
+                [sys.executable, os.path.join("runner","start_openwebui.py"), "--host", self.host, "--port", str(self.port)],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
