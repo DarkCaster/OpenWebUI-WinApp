@@ -46,7 +46,7 @@ def main() -> int:
         exit_code = 1
 
     finally:
-        # Ensure proper shutdown
+        # Ensure proper shutdown - always called when window closes
         if controller:
             try:
                 controller.shutdown()

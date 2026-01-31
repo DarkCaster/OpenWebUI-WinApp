@@ -1,10 +1,12 @@
 import webview
-from typing import Optional, Callable
+from typing import Optional, Callable, List
 from logger import get_logger
 from .menu_builder import MenuBuilder
 from .console_view import ConsoleView
 from .status_pages import StatusPage
 from runner import ProcessState, OpenWebUIRunner
+import threading
+import time
 
 
 class MainWindow:
@@ -23,6 +25,7 @@ class MainWindow:
         runner: Optional[OpenWebUIRunner] = None,
         initial_html: Optional[str] = None,
         on_ready_callback: Optional[Callable[[], None]] = None,
+        on_closing_callback: Optional[Callable[[], None]] = None,
     ):
         """
         Initialize the main window.
@@ -34,6 +37,7 @@ class MainWindow:
             runner: Reference to OpenWebUIRunner instance
             initial_html: Initial HTML content to display when window is created
             on_ready_callback: Callback function to execute after window is ready
+            on_closing_callback: Callback function to execute when window is closing
         """
         self.width = width
         self.height = height
@@ -41,11 +45,18 @@ class MainWindow:
         self.runner = runner
         self.initial_html = initial_html
         self.on_ready_callback = on_ready_callback
+        self.on_closing_callback = on_closing_callback
 
         self.window: Optional[webview.Window] = None
         self.console_view = ConsoleView(max_lines=1000)
         self.console_visible = False
         self.window_ready = False
+
+        # Console update throttling
+        self._console_update_requested = False
+        self._console_update_lock = threading.Lock()
+        self._console_update_thread: Optional[threading.Thread] = None
+        self._console_update_interval = 0.5  # seconds
 
         self.logger = get_logger(__name__)
         self.logger.info(f"MainWindow initialized ({width}x{height})")
@@ -90,6 +101,9 @@ class MainWindow:
                 min_size=(800, 600),
                 menu=menu,
             )
+
+        # Register window closing event handler
+        self.window.events.closing += self._on_window_closing_event
 
         self.logger.info("Main window created")
 
@@ -161,15 +175,29 @@ class MainWindow:
             # Update console with current output
             if self.runner:
                 lines = self.runner.get_output_lines()
-                self.update_console(lines)
+                self._perform_console_update(lines)
+            # Start console update thread for periodic updates
+            self._start_console_update_thread()
         else:
             self.logger.info("Console panel hidden")
+            # Stop console update thread
+            self._stop_console_update_thread()
             # Reload current state page or URL
             if self.runner:
                 state = self.runner.get_state()
                 self._load_state_page(state)
 
-    def update_console(self, lines: list) -> None:
+    def request_console_update(self) -> None:
+        """
+        Request a console update (will be throttled).
+        
+        This method can be called frequently but actual updates
+        will be batched according to the update interval.
+        """
+        with self._console_update_lock:
+            self._console_update_requested = True
+
+    def update_console(self, lines: List[str]) -> None:
         """
         Update console view content.
 
@@ -179,9 +207,66 @@ class MainWindow:
         if not self.console_visible:
             return
 
+        self._perform_console_update(lines)
+
+    def _perform_console_update(self, lines: List[str]) -> None:
+        """
+        Actually perform the console HTML update.
+
+        Args:
+            lines: List of output lines to display
+        """
         self.console_view.update_content(lines)
         html = self.console_view.generate_html(lines)
         self.load_html(html)
+
+    def _start_console_update_thread(self) -> None:
+        """
+        Start the background thread for throttled console updates.
+        """
+        if self._console_update_thread and self._console_update_thread.is_alive():
+            return
+
+        self._console_update_thread = threading.Thread(
+            target=self._console_update_worker,
+            daemon=True,
+            name="ConsoleUpdateWorker"
+        )
+        self._console_update_thread.start()
+        self.logger.debug("Console update thread started")
+
+    def _stop_console_update_thread(self) -> None:
+        """
+        Stop the background thread for throttled console updates.
+        """
+        # The thread will exit naturally when console_visible becomes False
+        if self._console_update_thread:
+            self.logger.debug("Waiting for console update thread to stop")
+            self._console_update_thread.join(timeout=2)
+
+    def _console_update_worker(self) -> None:
+        """
+        Background worker that performs throttled console updates.
+        """
+        self.logger.debug("Console update worker started")
+        
+        while self.console_visible:
+            # Check if update was requested
+            update_needed = False
+            with self._console_update_lock:
+                if self._console_update_requested:
+                    update_needed = True
+                    self._console_update_requested = False
+
+            # Perform update if needed
+            if update_needed and self.runner:
+                lines = self.runner.get_output_lines()
+                self._perform_console_update(lines)
+
+            # Sleep for the update interval
+            time.sleep(self._console_update_interval)
+
+        self.logger.debug("Console update worker stopped")
 
     def update_menu_state(self, process_state: ProcessState) -> None:
         """
@@ -262,16 +347,23 @@ class MainWindow:
         """
         self.logger.info("Exit action triggered from menu")
 
-        # Stop runner if running
-        if self.runner:
-            state = self.runner.get_state()
-            if state in (ProcessState.RUNNING, ProcessState.STARTING):
-                self.logger.info("Stopping runner before exit")
-                self.runner.stop()
+        # Trigger the closing callback (which will stop the runner)
+        if self.on_closing_callback:
+            self.on_closing_callback()
 
         # Destroy the window
         if self.window:
             self.window.destroy()
+
+    def _on_window_closing_event(self) -> None:
+        """
+        Event handler called when window is being closed.
+        """
+        self.logger.info("Window closing event triggered")
+
+        # Call the closing callback if provided
+        if self.on_closing_callback:
+            self.on_closing_callback()
 
     def _load_state_page(self, state: ProcessState) -> None:
         """

@@ -44,6 +44,7 @@ class AppController:
             runner=self.runner,
             initial_html=StatusPage.starting_page(),
             on_ready_callback=self._on_window_ready,
+            on_closing_callback=self._on_window_closing,
         )
 
         # Initialize window
@@ -65,7 +66,11 @@ class AppController:
 
         # Show window (blocking call)
         # Auto-start will be triggered by _on_window_ready callback
+        # When window closes, this call will return
         self.window.show()
+
+        # Window has been closed, log this event
+        self.logger.info("Main window closed")
 
     def _on_window_ready(self) -> None:
         """
@@ -79,6 +84,24 @@ class AppController:
         except Exception as e:
             self.logger.error(f"Failed to auto-start Open WebUI: {e}")
             self.window.load_html(StatusPage.error_page(f"Failed to start: {str(e)}"))
+
+    def _on_window_closing(self) -> None:
+        """
+        Callback executed when the window is being closed.
+
+        Ensures runner is stopped before window closes.
+        """
+        self.logger.info("Window closing event received")
+        
+        if self.runner:
+            state = self.runner.get_state()
+            if state in (ProcessState.RUNNING, ProcessState.STARTING):
+                self.logger.info("Stopping runner due to window closing")
+                try:
+                    # Use a shorter timeout for window close to avoid hanging
+                    self.runner.stop(timeout=config.SHUTDOWN_TIMEOUT)
+                except Exception as e:
+                    self.logger.error(f"Error stopping runner during window close: {e}")
 
     def shutdown(self) -> None:
         """
@@ -111,11 +134,11 @@ class AppController:
         """
         self.logger.info(f"Handling state change: {old_state} -> {new_state}")
 
-        # Update menu state
+        # Update menu state (always do this, regardless of console visibility)
         if self.window:
             self.window.update_menu_state(new_state)
 
-        # Skip UI updates if console is visible
+        # Skip main content UI updates if console is visible
         if self.window and self.window.console_visible:
             self.logger.debug("Console visible, skipping state page update")
             return
@@ -167,5 +190,4 @@ class AppController:
 
         # Update console view if visible
         if self.window and self.window.console_visible:
-            lines = self.runner.get_output_lines()
-            self.window.update_console(lines)
+            self.window.request_console_update()
