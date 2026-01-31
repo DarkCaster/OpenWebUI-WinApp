@@ -85,8 +85,10 @@ class OpenWebUIRunner:
             env["PYTHONIOENCODING"] = "utf-8"
 
             # Launch subprocess using Python interpreter to run startup script
+            # Generate path to start_openwebui.py in the same directory as this script
+            start_script_path = os.path.join(os.path.dirname(__file__), "start_openwebui.py")
             self._process = subprocess.Popen(
-                [sys.executable, os.path.join("runner","start_openwebui.py"), "--host", self.host, "--port", str(self.port)],
+                [sys.executable, start_script_path, "--host", self.host, "--port", str(self.port)],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
