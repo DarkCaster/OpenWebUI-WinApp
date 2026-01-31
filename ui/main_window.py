@@ -85,6 +85,8 @@ class MainWindow:
                 "toggle_console": self.handle_toggle_console,
                 "toggle_auto_scroll": self.handle_toggle_auto_scroll,
                 "exit": self.handle_exit,
+                "home": self.handle_home,
+                "back": self.handle_back,
             }
         )
 
@@ -495,6 +497,49 @@ class MainWindow:
         # Destroy the window
         if self.window:
             self.window.destroy()
+
+    def handle_home(self) -> None:
+        """
+        Menu callback for home action (navigate to service home page).
+        """
+        self.logger.info("Home action triggered from menu")
+
+        if not self.runner:
+            self.logger.error("No runner available")
+            return
+
+        state = self.runner.get_state()
+        
+        # Only perform navigation if service is running
+        if state == ProcessState.RUNNING:
+            url = f"http://127.0.0.1:{self.runner.port}"
+            self.logger.info(f"Navigating to home: {url}")
+            self.load_url(url)
+        else:
+            self.logger.warning(f"Home navigation ignored - service not running (state: {state})")
+
+    def handle_back(self) -> None:
+        """
+        Menu callback for back action (browser back navigation).
+        """
+        self.logger.info("Back action triggered from menu")
+
+        if not self.runner:
+            self.logger.error("No runner available")
+            return
+
+        state = self.runner.get_state()
+        
+        # Only perform navigation if service is running
+        if state == ProcessState.RUNNING:
+            if self.window:
+                try:
+                    self.logger.info("Executing browser back navigation")
+                    self.window.evaluate_js("history.back();")
+                except Exception as e:
+                    self.logger.error(f"Failed to execute back navigation: {e}")
+        else:
+            self.logger.warning(f"Back navigation ignored - service not running (state: {state})")
 
     def _on_window_closing_event(self) -> None:
         """

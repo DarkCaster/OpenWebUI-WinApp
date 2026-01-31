@@ -19,7 +19,7 @@ class MenuBuilder:
         Args:
             callbacks: Dictionary mapping action names to callback functions.
                       Expected keys: 'start', 'stop', 'restart', 'toggle_console', 
-                      'toggle_auto_scroll', 'exit'
+                      'toggle_auto_scroll', 'exit', 'home', 'back'
 
         Returns:
             List of menu items compatible with pywebview (list of webview.Menu objects)
@@ -41,7 +41,14 @@ class MenuBuilder:
         ]
         control_menu = Menu('Control', control_menu_items)
 
-        return [file_menu, control_menu]
+        # Navigation menu
+        navigation_menu_items = [
+            MenuAction('Home', callbacks.get("home", lambda: None)),
+            MenuAction('Back', callbacks.get("back", lambda: None))
+        ]
+        navigation_menu = Menu('Navigation', navigation_menu_items)
+
+        return [file_menu, control_menu, navigation_menu]
 
     @staticmethod
     def get_menu_state(process_state: ProcessState) -> Dict[str, bool]:
@@ -62,6 +69,8 @@ class MenuBuilder:
             "toggle_console": True,  # Always enabled
             "toggle_auto_scroll": True,  # Always enabled
             "exit": True,  # Always enabled
+            "home": True,  # Always enabled
+            "back": True,  # Always enabled
         }
 
         if process_state == ProcessState.STOPPED:
