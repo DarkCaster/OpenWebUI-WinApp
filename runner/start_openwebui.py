@@ -1,6 +1,6 @@
 import sys
 import argparse
-
+from open_webui import serve
 
 def main():
     """
@@ -16,11 +16,8 @@ def main():
     args = parser.parse_args()
     
     try:
-        # Import open-webui package
-        from open_webui import app
-        
         # Call serve method with host and port parameters
-        app.serve(host=args.host, port=args.port)
+        serve(host=args.host, port=args.port)
         
     except ImportError as e:
         print(f"Error: Failed to import open-webui package: {e}", file=sys.stderr)
