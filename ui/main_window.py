@@ -122,6 +122,10 @@ class MainWindow:
         # Register window closing event handler
         self.window.events.closing += self._on_window_closing_event
 
+        # Note: pywebview does not provide a minimize event handler
+        # Therefore, the minimize button cannot be intercepted to hide to tray
+        # Only the close button can trigger hide-to-tray behavior
+
         self.logger.info("Main window created")
 
     def show(self) -> None:
@@ -133,6 +137,9 @@ class MainWindow:
             return
 
         self.logger.info("Starting pywebview")
+        
+        # Window is being shown, mark as visible
+        self.is_hidden = False
         
         # If there's a ready callback, wrap it to set window_ready flag
         if self.on_ready_callback:
@@ -595,6 +602,15 @@ class MainWindow:
         self.logger.info("Restoring window from system tray")
         self.is_hidden = False
         self.window.show()
+
+    def is_visible(self) -> bool:
+        """
+        Check if window is currently visible.
+
+        Returns:
+            True if window is visible, False if hidden
+        """
+        return not self.is_hidden
 
     def destroy(self) -> None:
         """

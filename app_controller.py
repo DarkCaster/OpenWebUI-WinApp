@@ -128,12 +128,17 @@ class AppController:
         """
         Callback executed when user clicks "Open" in system tray or left-clicks icon.
 
-        Restores the window from system tray.
+        Toggles window visibility (shows if hidden, hides if visible).
         """
         self.logger.info("Tray open action received")
         
         if self.window:
-            self.window.restore()
+            if self.window.is_visible():
+                self.logger.info("Window is visible, hiding to tray")
+                self.window.hide()
+            else:
+                self.logger.info("Window is hidden, restoring from tray")
+                self.window.restore()
 
     def _on_tray_exit(self) -> None:
         """
