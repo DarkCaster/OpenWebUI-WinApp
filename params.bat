@@ -5,6 +5,8 @@ REM UV settings
 set "UV_CONCURRENT_DOWNLOADS=4"
 set "UV_CONCURRENT_INSTALLS=2"
 
+REM launcher settings, persistent storage for webview cache
+set "WEB_STORAGE=%base_dir%webview_cache"
 
 REM open-webui settings
 set "HOST=127.0.0.10"

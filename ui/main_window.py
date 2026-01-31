@@ -4,6 +4,7 @@ from logger import get_logger
 from .menu_builder import MenuBuilder
 from .console_view import ConsoleView
 from .status_pages import StatusPage
+from config import WEB_STORAGE
 from runner import ProcessState, OpenWebUIRunner
 import threading
 import time
@@ -147,12 +148,12 @@ class MainWindow:
                 self.window_ready = True
                 self.logger.debug("Window ready flag set")
                 self.on_ready_callback()
-            webview.start(wrapped_callback)
+            webview.start(wrapped_callback, storage_path=WEB_STORAGE, private_mode=False)
         else:
             def ready_callback():
                 self.window_ready = True
                 self.logger.debug("Window ready flag set")
-            webview.start(ready_callback)
+            webview.start(ready_callback, storage_path=WEB_STORAGE, private_mode=False)
 
     def load_url(self, url: str) -> None:
         """

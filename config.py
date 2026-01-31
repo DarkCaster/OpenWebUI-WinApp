@@ -8,6 +8,9 @@ Contains all configurable parameters and constants used throughout
 the Open WebUI Launcher application.
 """
 
+# Location of webview browser cache, cookies, local storage
+WEB_STORAGE = os.getenv("WEB_STORAGE", os.getcwd())
+
 # Host address for open-webui service
 # Read from HOST environment variable, default to 127.0.0.1
 HOST = os.getenv("HOST", "127.0.0.1")
