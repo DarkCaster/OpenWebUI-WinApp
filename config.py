@@ -31,5 +31,8 @@ WINDOW_WIDTH = int(os.getenv("WINDOW_WIDTH", "1200"))
 # Default window height in pixels
 WINDOW_HEIGHT = int(os.getenv("WINDOW_HEIGHT", "960"))
 
+# Open links in external browser, or directly in application window
+OPEN_EXTERNAL_LINKS_IN_BROWSER = bool(os.getenv("OPEN_EXTERNAL_LINKS_IN_BROWSER", "True"))
+
 # System tray icon title/tooltip text
 SYSTEM_TRAY_TITLE = "Open WebUI Launcher"

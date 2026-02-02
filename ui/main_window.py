@@ -4,7 +4,7 @@ from logger import get_logger
 from .menu_builder import MenuBuilder
 from .console_view import ConsoleView
 from .status_pages import StatusPage
-from config import WEB_STORAGE
+from config import WEB_STORAGE, OPEN_EXTERNAL_LINKS_IN_BROWSER
 from runner import ProcessState, OpenWebUIRunner
 import threading
 import time
@@ -93,6 +93,11 @@ class MainWindow:
             }
         )
 
+        webview.settings["ALLOW_DOWNLOADS"] = True
+        webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = (
+            OPEN_EXTERNAL_LINKS_IN_BROWSER
+        )
+
         # Create the main window with initial content
         if self.initial_html:
             self.window = webview.create_window(
@@ -135,21 +140,27 @@ class MainWindow:
             return
 
         self.logger.info("Starting pywebview")
-        
+
         # Window is being shown, mark as visible
         self.is_hidden = False
-        
+
         # If there's a ready callback, wrap it to set window_ready flag
         if self.on_ready_callback:
+
             def wrapped_callback():
                 self.window_ready = True
                 self.logger.debug("Window ready flag set")
                 self.on_ready_callback()
-            webview.start(wrapped_callback, storage_path=WEB_STORAGE, private_mode=False)
+
+            webview.start(
+                wrapped_callback, storage_path=WEB_STORAGE, private_mode=False
+            )
         else:
+
             def ready_callback():
                 self.window_ready = True
                 self.logger.debug("Window ready flag set")
+
             webview.start(ready_callback, storage_path=WEB_STORAGE, private_mode=False)
 
     def load_url(self, url: str) -> None:
@@ -245,7 +256,8 @@ class MainWindow:
             True if console was auto-opened and user didn't manually toggle it
         """
         should_close = (
-            self.console_auto_opened and not self.console_manually_toggled_during_startup
+            self.console_auto_opened
+            and not self.console_manually_toggled_during_startup
         )
         self.logger.debug(
             f"Should auto-close console: {should_close} "
@@ -294,7 +306,7 @@ class MainWindow:
     def request_console_update(self) -> None:
         """
         Request a console update (will be throttled).
-        
+
         This method can be called frequently but actual updates
         will be batched according to the update interval.
         """
@@ -326,34 +338,42 @@ class MainWindow:
 
         # Check if we need to do a full reload
         # (first time, or line count decreased indicating buffer was trimmed)
-        if not self._console_initialized or current_line_count < self._last_console_line_count:
+        if (
+            not self._console_initialized
+            or current_line_count < self._last_console_line_count
+        ):
             self.logger.debug("Performing full console initialization")
             self.console_view.update_content(lines)
-            html = self.console_view.generate_initial_html(auto_scroll=self.auto_scroll_enabled)
+            html = self.console_view.generate_initial_html(
+                auto_scroll=self.auto_scroll_enabled
+            )
             self.load_html(html)
             self._console_initialized = True
             self._last_console_line_count = current_line_count
         else:
             # Incremental update: append only new lines
             new_line_count = current_line_count - self._last_console_line_count
-            
+
             if new_line_count > 0:
                 # Extract new lines
                 new_lines = lines[-new_line_count:]
-                
+
                 # Generate JavaScript to append new lines
                 script = self.console_view.generate_append_script(
-                    new_lines, 
-                    self.auto_scroll_enabled
+                    new_lines, self.auto_scroll_enabled
                 )
-                
+
                 if script and self.window:
                     try:
                         self.window.evaluate_js(script)
                         self._last_console_line_count = current_line_count
-                        self.logger.debug(f"Appended {new_line_count} new lines to console")
+                        self.logger.debug(
+                            f"Appended {new_line_count} new lines to console"
+                        )
                     except Exception as e:
-                        self.logger.error(f"Failed to evaluate JavaScript for console update: {e}")
+                        self.logger.error(
+                            f"Failed to evaluate JavaScript for console update: {e}"
+                        )
                         # Fall back to full reload on error
                         self._console_initialized = False
                         self._perform_console_update(lines)
@@ -367,9 +387,7 @@ class MainWindow:
             return
 
         self._console_update_thread = threading.Thread(
-            target=self._console_update_worker,
-            daemon=True,
-            name="ConsoleUpdateWorker"
+            target=self._console_update_worker, daemon=True, name="ConsoleUpdateWorker"
         )
         self._console_update_thread.start()
         self.logger.debug("Console update thread started")
@@ -388,7 +406,7 @@ class MainWindow:
         Background worker that performs throttled console updates.
         """
         self.logger.debug("Console update worker started")
-        
+
         while self.console_visible:
             # Check if update was requested
             update_needed = False
@@ -485,8 +503,10 @@ class MainWindow:
         Menu callback for toggle auto-scroll action.
         """
         self.auto_scroll_enabled = not self.auto_scroll_enabled
-        self.logger.info(f"Auto-scroll {'enabled' if self.auto_scroll_enabled else 'disabled'}")
-        
+        self.logger.info(
+            f"Auto-scroll {'enabled' if self.auto_scroll_enabled else 'disabled'}"
+        )
+
         # If console is visible and auto-scroll was just enabled, scroll to bottom
         if self.console_visible and self.auto_scroll_enabled and self.window:
             try:
@@ -522,14 +542,16 @@ class MainWindow:
             return
 
         state = self.runner.get_state()
-        
+
         # Only perform navigation if service is running
         if state == ProcessState.RUNNING:
             url = f"http://{self.runner.host}:{self.runner.port}"
             self.logger.info(f"Navigating to home: {url}")
             self.load_url(url)
         else:
-            self.logger.warning(f"Home navigation ignored - service not running (state: {state})")
+            self.logger.warning(
+                f"Home navigation ignored - service not running (state: {state})"
+            )
 
     def handle_back(self) -> None:
         """
@@ -542,7 +564,7 @@ class MainWindow:
             return
 
         state = self.runner.get_state()
-        
+
         # Only perform navigation if service is running
         if state == ProcessState.RUNNING:
             if self.window:
@@ -552,12 +574,14 @@ class MainWindow:
                 except Exception as e:
                     self.logger.error(f"Failed to execute back navigation: {e}")
         else:
-            self.logger.warning(f"Back navigation ignored - service not running (state: {state})")
+            self.logger.warning(
+                f"Back navigation ignored - service not running (state: {state})"
+            )
 
     def _on_window_closing_event(self) -> bool:
         """
         Event handler called when window is being closed.
-        
+
         Returns:
             True to allow window close, False to cancel
         """
@@ -574,7 +598,7 @@ class MainWindow:
         self.logger.info("Proceeding with window close")
         if self.on_closing_callback:
             self.on_closing_callback()
-        
+
         return True
 
     def hide(self) -> None:
