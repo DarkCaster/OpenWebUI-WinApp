@@ -22,7 +22,6 @@ class MainWindow:
         self,
         width: int = 1200,
         height: int = 800,
-        console_height: int = 200,
         runner: Optional[OpenWebUIRunner] = None,
         initial_html: Optional[str] = None,
         on_ready_callback: Optional[Callable[[], None]] = None,
@@ -35,7 +34,6 @@ class MainWindow:
         Args:
             width: Window width in pixels
             height: Window height in pixels
-            console_height: Console panel height when visible
             runner: Reference to OpenWebUIRunner instance
             initial_html: Initial HTML content to display when window is created
             on_ready_callback: Callback function to execute after window is ready
@@ -44,7 +42,6 @@ class MainWindow:
         """
         self.width = width
         self.height = height
-        self.console_height = console_height
         self.runner = runner
         self.initial_html = initial_html
         self.on_ready_callback = on_ready_callback

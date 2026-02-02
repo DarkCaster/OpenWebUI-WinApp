@@ -213,12 +213,10 @@
 
 - `PORT` - Port number from environment variable or default 8080
 - `HEALTH_CHECK_TIMEOUT` - Maximum time to wait for service (e.g., 60 seconds)
-- `HEALTH_CHECK_INTERVAL` - Time between health checks (e.g., 1 second)
 - `SHUTDOWN_TIMEOUT` - Time to wait for graceful shutdown (e.g., 10 seconds)
 - `MAX_CONSOLE_LINES` - Maximum console output lines to keep (e.g., 1000)
 - `WINDOW_WIDTH` - Default window width (e.g., 1200)
 - `WINDOW_HEIGHT` - Default window height (e.g., 800)
-- `CONSOLE_HEIGHT` - Console panel height when visible (e.g., 200)
 
 **Implementation notes**:
 

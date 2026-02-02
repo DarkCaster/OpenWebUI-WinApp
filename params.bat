@@ -7,6 +7,10 @@ set "UV_CONCURRENT_INSTALLS=2"
 
 REM launcher settings, persistent storage for webview cache
 set "WEB_STORAGE=%base_dir%webview_cache"
+set "SHUTDOWN_TIMEOUT=10"
+set "MAX_CONSOLE_LINES=1000"
+set "WINDOW_WIDTH=1200"
+set "WINDOW_HEIGHT=960"
 
 REM open-webui settings
 set "HOST=127.0.0.10"

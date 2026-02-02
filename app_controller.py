@@ -40,7 +40,6 @@ class AppController:
         self.window = MainWindow(
             width=config.WINDOW_WIDTH,
             height=config.WINDOW_HEIGHT,
-            console_height=config.CONSOLE_HEIGHT,
             runner=self.runner,
             initial_html=StatusPage.starting_page(),
             on_ready_callback=self._on_window_ready,
