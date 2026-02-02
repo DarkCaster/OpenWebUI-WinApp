@@ -1,6 +1,5 @@
 from webview.menu import Menu, MenuAction, MenuSeparator
 from typing import Dict, Callable
-from runner import ProcessState
 
 
 class MenuBuilder:
@@ -49,50 +48,3 @@ class MenuBuilder:
         navigation_menu = Menu('Navigation', navigation_menu_items)
 
         return [file_menu, control_menu, navigation_menu]
-
-    @staticmethod
-    def get_menu_state(process_state: ProcessState) -> Dict[str, bool]:
-        """
-        Get enabled/disabled states for menu items based on current ProcessState.
-
-        Args:
-            process_state: Current process state
-
-        Returns:
-            Dictionary mapping action names to enabled state (True=enabled, False=disabled)
-        """
-        # Default: all items disabled
-        state = {
-            "start": False,
-            "stop": False,
-            "restart": False,
-            "toggle_console": True,  # Always enabled
-            "toggle_auto_scroll": True,  # Always enabled
-            "exit": True,  # Always enabled
-            "home": True,  # Always enabled
-            "back": True,  # Always enabled
-        }
-
-        if process_state == ProcessState.STOPPED:
-            # Only Start should be enabled
-            state["start"] = True
-
-        elif process_state == ProcessState.STARTING:
-            # Only Stop should be enabled (to cancel startup)
-            state["stop"] = True
-
-        elif process_state == ProcessState.RUNNING:
-            # Stop and Restart should be enabled
-            state["stop"] = True
-            state["restart"] = True
-
-        elif process_state == ProcessState.STOPPING:
-            # Nothing should be enabled during stopping (except always-enabled items)
-            pass
-
-        elif process_state == ProcessState.ERROR:
-            # Start and Restart should be enabled to recover
-            state["start"] = True
-            state["restart"] = True
-
-        return state

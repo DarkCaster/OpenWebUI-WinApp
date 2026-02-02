@@ -425,21 +425,6 @@ class MainWindow:
 
         self.logger.debug("Console update worker stopped")
 
-    def update_menu_state(self, process_state: ProcessState) -> None:
-        """
-        Enable/disable menu items based on process state.
-
-        Note: pywebview doesn't support dynamic menu state updates,
-        so this is a placeholder for potential future implementation.
-
-        Args:
-            process_state: Current process state
-        """
-        menu_state = MenuBuilder.get_menu_state(process_state)
-        self.logger.debug(f"Menu state for {process_state}: {menu_state}")
-        # pywebview limitation: cannot dynamically update menu item states
-        # This would require rebuilding the entire menu structure
-
     def handle_start(self) -> None:
         """
         Menu callback for start action.
