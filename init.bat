@@ -18,6 +18,10 @@ if exist "%base_dir%params.bat" (
     call "%base_dir%params.bat"
 )
 
+echo Downloading ffmpeg binaries
+call %script_dir%tools\download-ffmpeg.bat
+if %errorlevel% neq 0 exit /b %errorlevel%
+
 set "py_dir=%base_dir%py_dist"
 echo Using Python base directory: %py_dir%
 
