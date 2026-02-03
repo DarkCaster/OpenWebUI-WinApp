@@ -15,6 +15,7 @@ set "OPEN_EXTERNAL_LINKS_IN_BROWSER=True"
 REM set "TEST_PAGE=https://www.whatismybrowser.com/detect/what-is-my-user-agent"
 
 REM open-webui settings
+REM NOTE: in order to allow use of microphone/webcam, you need to set OpenWebUI address to localhost, like 127.0.0.1.
 set "HOST=127.0.0.10"
 set "PORT=58080"
 set "DATA_DIR=%base_dir%open_webui"
