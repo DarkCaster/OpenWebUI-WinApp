@@ -30,6 +30,9 @@ webview_cache/
 # Subdirs inside tools dir
 /tools/**/
 /tools/*.zip
+/tools/ffmpeg.exe
+/tools/ffprobe.exe
+/tools/ffplay.exe
 
 # Perpetual
 /.perpetual/*
