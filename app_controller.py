@@ -212,10 +212,6 @@ class AppController:
         """
         self.logger.info(f"Handling state change: {old_state} -> {new_state}")
 
-        # Update menu state (always do this, regardless of console visibility)
-        if self.window:
-            self.window.update_menu_state(new_state)
-
         # Load appropriate page based on new state
         if new_state == ProcessState.STOPPED:
             # Reset startup tracking flags

@@ -158,7 +158,6 @@
   - `load_url(url)` - Load specific URL in window
   - `load_html(html)` - Load HTML content in window
   - `toggle_console()` - Show/hide console panel
-  - `update_menu_state()` - Enable/disable menu items based on state
   - `handle_start()` - Menu callback for start action
   - `handle_stop()` - Menu callback for stop action
   - `handle_restart()` - Menu callback for restart action
