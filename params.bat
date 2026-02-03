@@ -12,7 +12,7 @@ set "MAX_CONSOLE_LINES=1000"
 set "WINDOW_WIDTH=1200"
 set "WINDOW_HEIGHT=960"
 set "OPEN_EXTERNAL_LINKS_IN_BROWSER=True"
-set "TEST_PAGE=https://pywebview.flowrl.com/hello"
+REM set "TEST_PAGE=https://www.whatismybrowser.com/detect/what-is-my-user-agent"
 
 REM open-webui settings
 set "HOST=127.0.0.10"

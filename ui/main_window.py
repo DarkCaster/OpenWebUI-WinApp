@@ -4,7 +4,7 @@ from logger import get_logger
 from .menu_builder import MenuBuilder
 from .console_view import ConsoleView
 from .status_pages import StatusPage
-from config import WEB_STORAGE, OPEN_EXTERNAL_LINKS_IN_BROWSER
+from config import WEB_STORAGE, OPEN_EXTERNAL_LINKS_IN_BROWSER, TEST_PAGE
 from runner import ProcessState, OpenWebUIRunner
 import threading
 import time
@@ -90,7 +90,9 @@ class MainWindow:
                 "exit": self.handle_exit,
                 "home": self.handle_home,
                 "back": self.handle_back,
-            }
+                "test_page": self.handle_test_page,
+            },
+            test_page_url=TEST_PAGE,
         )
 
         webview.settings["ALLOW_DOWNLOADS"] = True
@@ -562,6 +564,15 @@ class MainWindow:
             self.logger.warning(
                 f"Back navigation ignored - service not running (state: {state})"
             )
+
+    def handle_test_page(self) -> None:
+        """
+        Menu callback for test page action (navigate to test page URL).
+        """
+        self.logger.info(
+            f"Test Page action triggered from menu - navigating to {TEST_PAGE}"
+        )
+        self.load_url(TEST_PAGE)
 
     def _on_window_closing_event(self) -> bool:
         """
