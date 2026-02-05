@@ -49,7 +49,9 @@ class OpenWebUIRunner:
         )
 
         self.logger = get_logger(__name__)
-        self.logger.info(f"OpenWebUIRunner initialized with host {self.host} and port {self.port}")
+        self.logger.info(
+            f"OpenWebUIRunner initialized with host {self.host} and port {self.port}"
+        )
 
     def start(self) -> bool:
         """
@@ -78,7 +80,9 @@ class OpenWebUIRunner:
             # Write separator
             self._write_separator("STARTING")
 
-            self.logger.info(f"Starting open-webui serve on host {self.host} and port {self.port}")
+            self.logger.info(
+                f"Starting open-webui serve on host {self.host} and port {self.port}"
+            )
 
             # Prepare environment with UTF-8 encoding
             env = os.environ.copy()
@@ -86,9 +90,18 @@ class OpenWebUIRunner:
 
             # Launch subprocess using Python interpreter to run startup script
             # Generate path to start_openwebui.py in the same directory as this script
-            start_script_path = os.path.join(os.path.dirname(__file__), "start_openwebui.py")
+            start_script_path = os.path.join(
+                os.path.dirname(__file__), "start_openwebui.py"
+            )
             self._process = subprocess.Popen(
-                [sys.executable, start_script_path, "--host", self.host, "--port", str(self.port)],
+                [
+                    sys.executable,
+                    start_script_path,
+                    "--host",
+                    self.host,
+                    "--port",
+                    str(self.port),
+                ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
@@ -345,12 +358,7 @@ class OpenWebUIRunner:
         finally:
             # Check if process terminated
             if self._process:
-                exit_code = self._process.poll()
-                if exit_code is not None and exit_code != 0:
-                    self.logger.error(f"Process terminated with exit code: {exit_code}")
-                elif exit_code == 0:
-                    self.logger.info("Process terminated normally with exit code: 0")
-
+                self._process.poll()
             self.logger.debug("Output reader thread ended")
 
     def _notify_output_subscribers(self, line: str) -> None:
