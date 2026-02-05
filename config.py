@@ -41,3 +41,6 @@ TEST_PAGE = os.getenv("TEST_PAGE", "")
 
 # System tray icon title/tooltip text
 SYSTEM_TRAY_TITLE = "Open WebUI Launcher"
+
+# Unique identifier for single instance lock (used in OS-specific IPC)
+SINGLE_INSTANCE_NAME = "OpenWebUILauncher"

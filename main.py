@@ -1,6 +1,8 @@
 import sys
 from logger import setup_logging, get_logger
 from app_controller import AppController
+from single_instance import SingleInstance
+from config import SINGLE_INSTANCE_NAME
 
 
 def main() -> int:
@@ -22,9 +24,16 @@ def main() -> int:
     logger.info("=" * 60)
 
     controller = None
+    single_instance = None
     exit_code = 0
 
     try:
+        # Acquire single instance lock
+        single_instance = SingleInstance(SINGLE_INSTANCE_NAME)
+        if not single_instance.acquire():
+            logger.error("Another instance is already running.")
+            return 1
+
         # Create application controller
         controller = AppController()
 
@@ -53,6 +62,16 @@ def main() -> int:
             except Exception as e:
                 logger.error(f"Error during shutdown: {e}", exc_info=True)
                 exit_code = 1
+
+        # Release single instance lock
+        if single_instance:
+            try:
+                logger.info("Releasing single instance lock")
+                single_instance.release()
+            except Exception as e:
+                logger.error(
+                    f"Error releasing single instance lock: {e}", exc_info=True
+                )
 
         logger.info("=" * 60)
         logger.info(f"Open WebUI Launcher - Exiting (code: {exit_code})")
