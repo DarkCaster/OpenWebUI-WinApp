@@ -6,7 +6,7 @@ Graphical application that runs the Python application `open-webui` and wraps th
 
 The application follows a modular architecture with clear separation of concerns:
 
-- **UI Layer**: `pywebview`-based main window with menu bar and console output panel
+- **UI Layer**: `pywebview`-based main window with menu bar
 - **Process Management Layer**: Subprocess handling for `open-webui serve`
 - **Health Check Layer**: HTTP-based service availability monitoring
 - **State Management Layer**: Application state coordination between components
@@ -19,14 +19,12 @@ The application follows a modular architecture with clear separation of concerns
 - **Fail-Safe**: Health checker with timeouts
 - **Graceful Shutdown**: Proper cleanup sequence ensures no orphaned processes
 - **Minimalist UI**: Status pages are simple HTML, no complex UI framework needed
-- **No Persistence**: No application configuration saving/loading
+- **No Persistence**: No configuration management from application for simplicity, configuration provided via env variables
 
 ### Guidelines
 
 - **Error Handling**: Every component should log errors using the logger package
-- **Thread Safety**: Use locks in `OpenWebUIRunner` for state transitions
 - **Resource Cleanup**: Ensure all threads are joined and processes terminated on exit
-- **User Feedback**: Always inform user of current state through UI
 - **Logging**: Use appropriate log levels (DEBUG for detailed flow, INFO for major events, ERROR for failures)
 
 ### Dependencies
