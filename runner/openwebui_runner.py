@@ -8,7 +8,7 @@ from datetime import datetime
 from logger import get_logger
 from .process_state import ProcessState
 from .health_checker import HealthChecker
-from config import HOST, PORT
+from app.config import HOST, PORT
 
 
 class OpenWebUIRunner:
