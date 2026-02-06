@@ -1,8 +1,8 @@
 import sys
 from logger import setup_logging, get_logger
-from app_controller import AppController
-from single_instance import SingleInstance
-from config import SINGLE_INSTANCE_NAME
+from app.app_controller import AppController
+from app.single_instance import SingleInstance
+from app.config import SINGLE_INSTANCE_NAME
 
 
 def main() -> int:
