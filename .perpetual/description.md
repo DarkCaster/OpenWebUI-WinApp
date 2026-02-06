@@ -1,6 +1,6 @@
 # Open WebUI Graphical Launcher
 
-Graphical application that runs the Python application `open-webui` and wraps the web interface in a single-window container implemented using the `pywebview` package.
+Graphical application that runs the Python web-application `open-webui` and wraps the web interface in a single-window container implemented using the `pywebview` package.
 
 ## Architecture Overview
 
