@@ -1,7 +1,7 @@
+import threading
 import pystray
 from PIL import Image, ImageDraw
-from typing import Optional, Callable
-import threading
+from typing import Any, Optional, Callable
 from logger import get_logger
 
 
@@ -31,7 +31,7 @@ class SystemTray:
         self.on_open = on_open
         self.on_exit = on_exit
 
-        self.icon: Optional[pystray.Icon] = None
+        self.icon: Optional[Any] = None
         self.tray_thread: Optional[threading.Thread] = None
         self.running = False
         self.lock = threading.Lock()
@@ -81,7 +81,7 @@ class SystemTray:
             pystray.MenuItem("Exit", self._handle_exit),
         )
 
-    def _handle_open(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
+    def _handle_open(self, icon: Any, item: pystray.MenuItem) -> None:
         """
         Handle "Open" menu item or left-click on icon.
 
@@ -96,7 +96,7 @@ class SystemTray:
             except Exception as e:
                 self.logger.error(f"Error in on_open callback: {e}", exc_info=True)
 
-    def _handle_exit(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
+    def _handle_exit(self, icon: Any, item: pystray.MenuItem) -> None:
         """
         Handle "Exit" menu item.
 
