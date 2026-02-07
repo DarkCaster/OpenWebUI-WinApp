@@ -603,6 +603,7 @@ class MainWindow:
 
         # This is a real exit, call the closing callback
         self.logger.info("Proceeding with window close")
+        self._stop_idle_timer()
         if self.on_closing_callback:
             self.on_closing_callback()
 
@@ -707,10 +708,11 @@ class MainWindow:
     def _stop_idle_timer(self) -> None:
         """Stop idle timer when window is restored."""
         self._is_idle_timer_active = False
-
-        if self._idle_timer and self._idle_timer.is_alive():
-            self._idle_timer.join(timeout=2)
-
+        try:
+            if self._idle_timer and self._idle_timer.is_alive():
+                self._idle_timer.join(timeout=2)
+        except Exception as e:
+            self.logger.warning(f"Error while stopping timer: {e}")
         self._idle_timer = None
         self.logger.debug("Idle timer stopped")
 
