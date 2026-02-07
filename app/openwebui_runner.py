@@ -5,10 +5,10 @@ import sys
 import time
 from datetime import datetime
 from typing import Callable, List, Optional, TextIO
-from app.logger import get_logger
-from app.config import HOST, PORT
 from .process_state import ProcessState
 from .health_checker import HealthChecker
+from .config import HOST, PORT
+from .logger import get_logger
 
 
 class OpenWebUIRunner:

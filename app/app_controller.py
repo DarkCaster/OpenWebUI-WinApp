@@ -1,10 +1,10 @@
-from .logger import get_logger
-from runner.process_state import ProcessState
-from runner.openwebui_runner import OpenWebUIRunner
 from ui.main_window import MainWindow
 from ui.status_pages import StatusPage
 from ui.system_tray import SystemTray
+from .process_state import ProcessState
+from .openwebui_runner import OpenWebUIRunner
 from .config import PORT, WINDOW_WIDTH, WINDOW_HEIGHT, SYSTEM_TRAY_TITLE, SHUTDOWN_TIMEOUT
+from .logger import get_logger
 
 
 class AppController:
