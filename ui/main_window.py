@@ -7,7 +7,12 @@ from .console_view import ConsoleView
 from .status_pages import StatusPage
 from app.process_state import ProcessState
 from app.openwebui_runner import OpenWebUIRunner
-from app.config import WEB_STORAGE, OPEN_EXTERNAL_LINKS_IN_BROWSER, TEST_PAGE, SYSTEM_TRAY_IDLE_TIMEOUT
+from app.config import (
+    WEB_STORAGE,
+    OPEN_EXTERNAL_LINKS_IN_BROWSER,
+    TEST_PAGE,
+    SYSTEM_TRAY_IDLE_TIMEOUT,
+)
 from app.logger import get_logger
 
 
@@ -614,7 +619,7 @@ class MainWindow:
         self.logger.info("Hiding window to system tray")
         self.is_hidden = True
         self.window.hide()
-        
+
         # Start idle timer when window is hidden
         self._start_idle_timer()
 
@@ -629,10 +634,10 @@ class MainWindow:
         self.logger.info("Restoring window from system tray")
         self.is_hidden = False
         self.window.show()
-        
+
         # Stop idle timer when window is restored
         self._stop_idle_timer()
-        
+
         # Restore page in main window
         if self.was_idle:
             self.was_idle = False
@@ -689,14 +694,12 @@ class MainWindow:
         """Start idle timer when window is minimized to tray."""
         if not self.console_visible:
             self._stop_idle_timer()  # Stop any existing timer first
-            
+
             self._idle_start_time = time.time()
             self._is_idle_timer_active = True
-            
+
             self._idle_timer = threading.Thread(
-                target=self._idle_timer_worker,
-                daemon=True,
-                name="IdleTimerWorker"
+                target=self._idle_timer_worker, daemon=True, name="IdleTimerWorker"
             )
             self._idle_timer.start()
             self.logger.debug("Idle timer started")
@@ -704,18 +707,21 @@ class MainWindow:
     def _stop_idle_timer(self) -> None:
         """Stop idle timer when window is restored."""
         self._is_idle_timer_active = False
-        
+
         if self._idle_timer and self._idle_timer.is_alive():
             self._idle_timer.join(timeout=2)
-        
+
         self._idle_timer = None
         self.logger.debug("Idle timer stopped")
 
     def _idle_timer_worker(self) -> None:
         """Background thread that monitors idle timeout."""
-        while self._is_idle_timer_active and time.time() - self._idle_start_time < self._idle_timeout:
+        while (
+            self._is_idle_timer_active
+            and time.time() - self._idle_start_time < self._idle_timeout
+        ):
             time.sleep(1.0)
-        
+
         if self._is_idle_timer_active:
             self._on_idle_timeout()
 
@@ -725,7 +731,7 @@ class MainWindow:
             # Don't navigate to idle page if console is visible
             self.logger.debug("Console is visible, skipping idle page")
             return
-        
+
         if self.is_hidden and not self.was_idle:
             self.logger.info("Idle timeout reached, navigating to idle page")
             self.load_html(StatusPage.idle_page())
