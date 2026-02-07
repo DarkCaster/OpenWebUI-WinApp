@@ -3,7 +3,13 @@ from ui.status_pages import StatusPage
 from ui.system_tray import SystemTray
 from .process_state import ProcessState
 from .openwebui_runner import OpenWebUIRunner
-from .config import PORT, WINDOW_WIDTH, WINDOW_HEIGHT, SYSTEM_TRAY_TITLE, SHUTDOWN_TIMEOUT
+from .config import (
+    PORT,
+    WINDOW_WIDTH,
+    WINDOW_HEIGHT,
+    SYSTEM_TRAY_TITLE,
+    SHUTDOWN_TIMEOUT,
+)
 from .logger import get_logger
 
 
@@ -115,7 +121,7 @@ class AppController:
 
         # This is a real exit, stop the runner
         self.is_exiting = True
-        
+
         if self.runner:
             state = self.runner.get_state()
             if state in (ProcessState.RUNNING, ProcessState.STARTING):
@@ -133,7 +139,9 @@ class AppController:
         Toggles window visibility (shows if hidden, hides if visible).
         """
         self.logger.info("Tray open action received")
-        
+        if self.is_exiting:
+            return
+
         if self.window:
             if self.window.is_visible():
                 self.logger.info("Window is visible, hiding to tray")
@@ -149,27 +157,12 @@ class AppController:
         Stops runner, stops system tray, and exits application.
         """
         self.logger.info("Tray exit action received")
-        
+
+        if self.is_exiting:
+            return
         self.is_exiting = True
 
-        # Stop runner if running
-        if self.runner:
-            state = self.runner.get_state()
-            if state in (ProcessState.RUNNING, ProcessState.STARTING):
-                self.logger.info("Stopping runner due to tray exit")
-                try:
-                    self.runner.stop(timeout=SHUTDOWN_TIMEOUT)
-                except Exception as e:
-                    self.logger.error(f"Error stopping runner during tray exit: {e}")
-
-        # Stop system tray
-        if self.system_tray:
-            try:
-                self.system_tray.stop()
-            except Exception as e:
-                self.logger.error(f"Error stopping system tray: {e}")
-
-        # Destroy window
+        # Destroy window, this will trigger full app shutdown
         if self.window:
             self.window.destroy()
 
@@ -220,12 +213,12 @@ class AppController:
             # Reset startup tracking flags
             if self.window:
                 self.window.reset_startup_tracking()
-            
+
             # Skip main content UI updates if console is visible
             if self.window and self.window.console_visible:
                 self.logger.debug("Console visible, skipping state page update")
                 return
-            
+
             self.logger.debug("Loading stopped page")
             if self.window:
                 self.window.load_html(StatusPage.stopped_page())
@@ -234,7 +227,7 @@ class AppController:
             # Auto-open console to show startup messages
             if self.window:
                 self.window.open_console_auto()
-            
+
             # Load starting page in background (will be shown if console is toggled off)
             self.logger.debug("Loading starting page")
             if self.window:
@@ -244,7 +237,7 @@ class AppController:
             self.logger.debug("Service is running")
             if self.window and self.runner:
                 url = f"http://{self.runner.host}:{self.runner.port}"
-                
+
                 # Check if console should be auto-closed
                 if self.window.should_auto_close_console():
                     # Auto-close console and load URL
@@ -259,14 +252,16 @@ class AppController:
                         self.window.load_url(url)
                     else:
                         # Console is visible by user choice, don't load URL yet
-                        self.logger.debug("Console visible by user choice, not loading URL")
+                        self.logger.debug(
+                            "Console visible by user choice, not loading URL"
+                        )
 
         elif new_state == ProcessState.STOPPING:
             # Skip main content UI updates if console is visible
             if self.window and self.window.console_visible:
                 self.logger.debug("Console visible, skipping state page update")
                 return
-            
+
             self.logger.debug("Loading stopping page")
             if self.window:
                 self.window.load_html(StatusPage.stopping_page())
@@ -275,12 +270,12 @@ class AppController:
             # Reset startup tracking flags
             if self.window:
                 self.window.reset_startup_tracking()
-            
+
             # Skip main content UI updates if console is visible
             if self.window and self.window.console_visible:
                 self.logger.debug("Console visible, skipping state page update")
                 return
-            
+
             self.logger.debug("Loading error page")
             if self.window:
                 # Get recent output lines to include in error message
