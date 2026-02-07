@@ -1,7 +1,10 @@
-from logger import get_logger
-from runner import OpenWebUIRunner, ProcessState
-from ui import MainWindow, StatusPage, SystemTray
-import config
+from .logger import get_logger
+from runner.process_state import ProcessState
+from runner.openwebui_runner import OpenWebUIRunner
+from ui.main_window import MainWindow
+from ui.status_pages import StatusPage
+from ui.system_tray import SystemTray
+from .config import PORT, WINDOW_WIDTH, WINDOW_HEIGHT, SYSTEM_TRAY_TITLE, SHUTDOWN_TIMEOUT
 
 
 class AppController:
@@ -33,13 +36,13 @@ class AppController:
         self.logger.info("Initializing application components")
 
         # Create runner instance
-        self.runner = OpenWebUIRunner(port=config.PORT)
+        self.runner = OpenWebUIRunner(port=PORT)
 
         # Create main window instance with initial starting page
         # (since auto-start happens immediately after window is ready)
         self.window = MainWindow(
-            width=config.WINDOW_WIDTH,
-            height=config.WINDOW_HEIGHT,
+            width=WINDOW_WIDTH,
+            height=WINDOW_HEIGHT,
             runner=self.runner,
             initial_html=StatusPage.starting_page(),
             on_ready_callback=self._on_window_ready,
@@ -52,7 +55,7 @@ class AppController:
 
         # Create system tray instance
         self.system_tray = SystemTray(
-            title=config.SYSTEM_TRAY_TITLE,
+            title=SYSTEM_TRAY_TITLE,
             on_open=self._on_tray_open,
             on_exit=self._on_tray_exit,
         )
@@ -119,7 +122,7 @@ class AppController:
                 self.logger.info("Stopping runner due to window closing")
                 try:
                     # Use a shorter timeout for window close to avoid hanging
-                    self.runner.stop(timeout=config.SHUTDOWN_TIMEOUT)
+                    self.runner.stop(timeout=SHUTDOWN_TIMEOUT)
                 except Exception as e:
                     self.logger.error(f"Error stopping runner during window close: {e}")
 
@@ -155,7 +158,7 @@ class AppController:
             if state in (ProcessState.RUNNING, ProcessState.STARTING):
                 self.logger.info("Stopping runner due to tray exit")
                 try:
-                    self.runner.stop(timeout=config.SHUTDOWN_TIMEOUT)
+                    self.runner.stop(timeout=SHUTDOWN_TIMEOUT)
                 except Exception as e:
                     self.logger.error(f"Error stopping runner during tray exit: {e}")
 
@@ -186,7 +189,7 @@ class AppController:
             if state in (ProcessState.RUNNING, ProcessState.STARTING):
                 self.logger.info("Stopping runner during shutdown")
                 try:
-                    self.runner.stop(timeout=config.SHUTDOWN_TIMEOUT)
+                    self.runner.stop(timeout=SHUTDOWN_TIMEOUT)
                 except Exception as e:
                     self.logger.error(f"Error stopping runner during shutdown: {e}")
 

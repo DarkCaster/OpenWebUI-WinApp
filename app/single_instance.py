@@ -4,7 +4,7 @@ import errno
 import ctypes
 from ctypes import wintypes
 
-from logger import get_logger
+from .logger import get_logger
 
 
 class SingleInstance:

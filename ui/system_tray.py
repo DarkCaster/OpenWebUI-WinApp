@@ -1,8 +1,8 @@
 import threading
 import pystray
-from PIL import Image, ImageDraw
 from typing import Any, Optional, Callable
-from logger import get_logger
+from PIL import Image, ImageDraw
+from app.logger import get_logger
 
 
 class SystemTray:

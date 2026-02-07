@@ -3,12 +3,12 @@ import threading
 import os
 import sys
 import time
-from typing import Callable, List, Optional, TextIO
 from datetime import datetime
-from logger import get_logger
+from typing import Callable, List, Optional, TextIO
+from app.logger import get_logger
+from app.config import HOST, PORT
 from .process_state import ProcessState
 from .health_checker import HealthChecker
-from app.config import HOST, PORT
 
 
 class OpenWebUIRunner:

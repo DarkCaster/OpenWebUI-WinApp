@@ -1,5 +1,5 @@
 from typing import List
-from logger import get_logger
+from app.logger import get_logger
 
 
 class ConsoleView:

@@ -2,7 +2,7 @@ import requests
 import threading
 import time
 from typing import Callable, Optional
-from logger import get_logger
+from app.logger import get_logger
 
 
 class HealthChecker:

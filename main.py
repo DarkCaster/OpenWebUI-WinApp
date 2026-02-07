@@ -1,5 +1,5 @@
 import sys
-from logger import setup_logging, get_logger
+from app.logger import setup_logging, get_logger
 from app.app_controller import AppController
 from app.single_instance import SingleInstance
 from app.config import SINGLE_INSTANCE_NAME

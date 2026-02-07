@@ -1,5 +1,5 @@
-from webview.menu import Menu, MenuAction, MenuSeparator
 from typing import Dict, Callable, Optional
+from webview.menu import Menu, MenuAction, MenuSeparator
 
 
 class MenuBuilder:

@@ -1,13 +1,14 @@
+import threading
+import time
 import webview
 from typing import Optional, Callable, List
-from logger import get_logger
+from app.config import WEB_STORAGE, OPEN_EXTERNAL_LINKS_IN_BROWSER, TEST_PAGE
+from app.logger import get_logger
+from runner.process_state import ProcessState
+from runner.openwebui_runner import OpenWebUIRunner
 from .menu_builder import MenuBuilder
 from .console_view import ConsoleView
 from .status_pages import StatusPage
-from app.config import WEB_STORAGE, OPEN_EXTERNAL_LINKS_IN_BROWSER, TEST_PAGE
-from runner import ProcessState, OpenWebUIRunner
-import threading
-import time
 
 
 class MainWindow:
