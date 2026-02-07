@@ -221,6 +221,91 @@ class StatusPage:
         """
 
     @staticmethod
+    def idle_page() -> str:
+        """
+        Generate HTML for the idle state when window is minimized to tray.
+
+        Returns:
+            HTML string with idle message
+        """
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Open WebUI Idle</title>
+            <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    color: #333333;
+                }
+                
+                .container {
+                    text-align: center;
+                    padding: 40px;
+                    background: rgba(255, 255, 255, 0.9);
+                    border-radius: 12px;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+                    max-width: 500px;
+                }
+                
+                h1 {
+                    font-size: 32px;
+                    font-weight: 600;
+                    margin-bottom: 20px;
+                    color: #2d3748;
+                }
+                
+                p {
+                    font-size: 18px;
+                    line-height: 1.6;
+                    color: #4a5568;
+                    margin-bottom: 12px;
+                }
+                
+                .instructions {
+                    margin-top: 24px;
+                    padding: 16px;
+                    background: #edf2f7;
+                    border-radius: 8px;
+                    border-left: 4px solid #4299e1;
+                }
+                
+                .instructions p {
+                    font-size: 16px;
+                    color: #2d3748;
+                }
+                
+                .menu-hint {
+                    font-weight: 600;
+                    color: #2b6cb0;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Open WebUI is Idle</h1>
+                <p>The main window has been minimized to the system tray.</p>
+                <div class="instructions">
+                    <p>To restore the window, click the system tray icon or select <span class="menu-hint">Open</span> from the tray menu.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+    @staticmethod
     def error_page(message: str) -> str:
         """
         Generate HTML for the error state with error details.

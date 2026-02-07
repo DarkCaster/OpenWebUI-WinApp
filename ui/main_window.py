@@ -7,7 +7,7 @@ from .console_view import ConsoleView
 from .status_pages import StatusPage
 from app.process_state import ProcessState
 from app.openwebui_runner import OpenWebUIRunner
-from app.config import WEB_STORAGE, OPEN_EXTERNAL_LINKS_IN_BROWSER, TEST_PAGE
+from app.config import WEB_STORAGE, OPEN_EXTERNAL_LINKS_IN_BROWSER, TEST_PAGE, SYSTEM_TRAY_IDLE_TIMEOUT
 from app.logger import get_logger
 
 
@@ -71,6 +71,13 @@ class MainWindow:
         self._console_initialized = False
         self._last_console_line_count = 0
 
+        # Idle timer tracking for system tray
+        self._idle_timeout = SYSTEM_TRAY_IDLE_TIMEOUT
+        self._idle_timer: Optional[threading.Thread] = None
+        self._idle_start_time: Optional[float] = None
+        self._is_idle_timer_active = False
+        self.was_idle = False
+
         self.logger = get_logger(__name__)
         self.logger.info(f"MainWindow initialized ({width}x{height})")
 
@@ -127,10 +134,6 @@ class MainWindow:
 
         # Register window closing event handler
         self.window.events.closing += self._on_window_closing_event
-
-        # Note: pywebview does not provide a minimize event handler
-        # Therefore, the minimize button cannot be intercepted to hide to tray
-        # Only the close button can trigger hide-to-tray behavior
 
         self.logger.info("Main window created")
 
@@ -294,6 +297,8 @@ class MainWindow:
                 self._perform_console_update(lines)
             # Start console update thread for periodic updates
             self._start_console_update_thread()
+            # Stop idle timer when console becomes visible
+            self._stop_idle_timer()
         else:
             self.logger.info("Console panel hidden")
             # Reset console state
@@ -609,6 +614,9 @@ class MainWindow:
         self.logger.info("Hiding window to system tray")
         self.is_hidden = True
         self.window.hide()
+        
+        # Start idle timer when window is hidden
+        self._start_idle_timer()
 
     def restore(self) -> None:
         """
@@ -621,6 +629,16 @@ class MainWindow:
         self.logger.info("Restoring window from system tray")
         self.is_hidden = False
         self.window.show()
+        
+        # Stop idle timer when window is restored
+        self._stop_idle_timer()
+        
+        # Restore page in main window
+        if self.was_idle:
+            self.was_idle = False
+            if not self.console_visible:
+                state = self.runner.get_state()
+                self._load_state_page(state)
 
     def is_visible(self) -> bool:
         """
@@ -665,3 +683,50 @@ class MainWindow:
             if self.runner:
                 url = f"http://{self.runner.host}:{self.runner.port}"
                 self.load_url(url)
+
+    # Idle timer implementation
+    def _start_idle_timer(self) -> None:
+        """Start idle timer when window is minimized to tray."""
+        if not self.console_visible:
+            self._stop_idle_timer()  # Stop any existing timer first
+            
+            self._idle_start_time = time.time()
+            self._is_idle_timer_active = True
+            
+            self._idle_timer = threading.Thread(
+                target=self._idle_timer_worker,
+                daemon=True,
+                name="IdleTimerWorker"
+            )
+            self._idle_timer.start()
+            self.logger.debug("Idle timer started")
+
+    def _stop_idle_timer(self) -> None:
+        """Stop idle timer when window is restored."""
+        self._is_idle_timer_active = False
+        
+        if self._idle_timer and self._idle_timer.is_alive():
+            self._idle_timer.join(timeout=2)
+        
+        self._idle_timer = None
+        self.logger.debug("Idle timer stopped")
+
+    def _idle_timer_worker(self) -> None:
+        """Background thread that monitors idle timeout."""
+        while self._is_idle_timer_active and time.time() - self._idle_start_time < self._idle_timeout:
+            time.sleep(1.0)
+        
+        if self._is_idle_timer_active:
+            self._on_idle_timeout()
+
+    def _on_idle_timeout(self) -> None:
+        """Handle idle timeout by navigating to idle page."""
+        if self.console_visible:
+            # Don't navigate to idle page if console is visible
+            self.logger.debug("Console is visible, skipping idle page")
+            return
+        
+        if self.is_hidden and not self.was_idle:
+            self.logger.info("Idle timeout reached, navigating to idle page")
+            self.load_html(StatusPage.idle_page())
+            self.was_idle = True

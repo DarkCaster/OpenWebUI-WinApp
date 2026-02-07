@@ -44,3 +44,6 @@ SYSTEM_TRAY_TITLE = "Open WebUI Launcher"
 
 # Unique identifier for single instance lock (used in OS-specific IPC)
 SINGLE_INSTANCE_NAME = "OpenWebUILauncher"
+
+# Time to wait in seconds before showing idle page when in system tray
+SYSTEM_TRAY_IDLE_TIMEOUT = int(os.getenv("SYSTEM_TRAY_IDLE_TIMEOUT", "300"))
