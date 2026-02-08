@@ -112,6 +112,7 @@ class MainWindow:
         webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = (
             OPEN_EXTERNAL_LINKS_IN_BROWSER
         )
+        webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
 
         # Create the main window with initial content
         if self.initial_html:
@@ -166,7 +167,10 @@ class MainWindow:
                 self.on_ready_callback()
 
             webview.start(
-                wrapped_callback, storage_path=WEB_STORAGE, private_mode=False
+                wrapped_callback,
+                storage_path=WEB_STORAGE,
+                private_mode=False,
+                debug=True,
             )
         else:
 
@@ -174,7 +178,9 @@ class MainWindow:
                 self.window_ready = True
                 self.logger.debug("Window ready flag set")
 
-            webview.start(ready_callback, storage_path=WEB_STORAGE, private_mode=False)
+            webview.start(
+                ready_callback, storage_path=WEB_STORAGE, private_mode=False, debug=True
+            )
 
     def load_url(self, url: str) -> None:
         """
