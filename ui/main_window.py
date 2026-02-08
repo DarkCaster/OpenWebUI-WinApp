@@ -124,6 +124,7 @@ class MainWindow:
                 fullscreen=False,
                 min_size=(800, 600),
                 menu=menu,
+                text_select=True,
             )
         else:
             self.window = webview.create_window(
@@ -135,6 +136,7 @@ class MainWindow:
                 fullscreen=False,
                 min_size=(800, 600),
                 menu=menu,
+                text_select=True,
             )
 
         # Register window closing event handler
