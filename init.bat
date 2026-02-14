@@ -27,6 +27,7 @@ echo Using Python base directory: %py_dir%
 
 echo Installing and upgrading python distribution and venv using UV
 set "UV_COMPILE_BYTECODE=0"
+set "UV_PYTHON_INSTALL_BIN=0"
 set "UV_PYTHON_INSTALL_REGISTRY=0"
 set "UV_PYTHON_BIN_DIR=%py_dir%\python_bin"
 set "UV_PYTHON_INSTALL_DIR=%py_dir%\dists"
